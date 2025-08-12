@@ -359,7 +359,7 @@
     </div>
 
     <div class="menu-container">
-        <a href="workout.html" class="menu-card workout welcome-animation" style="animation-delay: 0.2s;" onclick="openModule('workout')">
+        <a href="workout.html" class="menu-card workout welcome-animation" style="animation-delay: 0.2s;">
             <div class="menu-icon">💪</div>
             <div class="menu-content">
                 <div class="menu-title">Тренировки</div>
@@ -368,7 +368,7 @@
             <div class="menu-arrow">›</div>
         </a>
 
-        <a href="food.html" class="menu-card food welcome-animation" style="animation-delay: 0.3s;" onclick="openModule('food')">
+        <a href="food.html" class="menu-card food welcome-animation" style="animation-delay: 0.3s;">
             <div class="menu-icon">🍽️</div>
             <div class="menu-content">
                 <div class="menu-title">Питание</div>
@@ -377,7 +377,7 @@
             <div class="menu-arrow">›</div>
         </a>
 
-        <a href="water.html" class="menu-card water welcome-animation" style="animation-delay: 0.4s;" onclick="openModule('water')">
+        <a href="water.html" class="menu-card water welcome-animation" style="animation-delay: 0.4s;">
             <div class="menu-icon">💧</div>
             <div class="menu-content">
                 <div class="menu-title">Водный баланс</div>
@@ -386,7 +386,7 @@
             <div class="menu-arrow">›</div>
         </a>
 
-        <a href="body.html" class="menu-card body welcome-animation" style="animation-delay: 0.5s;" onclick="openModule('body')">
+        <a href="body.html" class="menu-card body welcome-animation" style="animation-delay: 0.5s;">
             <div class="menu-icon">📏</div>
             <div class="menu-content">
                 <div class="menu-title">Замеры тела</div>
@@ -424,23 +424,14 @@
             animateProgress();
         });
 
-        function openModule(module) {
-            // Предотвращаем переход по ссылке по умолчанию
-            event.preventDefault();
-            
-            // Показываем загрузку
-            document.getElementById('loading').classList.add('active');
-            
-            // Вибрация
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
-            }
-            
-            // Переход на нужную страницу
-            setTimeout(() => {
-                window.location.href = event.currentTarget.href;
-            }, 300);
-        }
+        // Добавляем вибрацию при клике на карточки
+        document.querySelectorAll('.menu-card').forEach(card => {
+            card.addEventListener('click', function() {
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            });
+        });
 
         function loadDailyStats() {
             // Загрузка статистики из CloudStorage
