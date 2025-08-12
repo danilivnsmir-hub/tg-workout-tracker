@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Body Tracker - Telegram App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding-bottom: 70px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .current-stats {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stats-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--tg-theme-text-color, #000);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #999);
+            margin-top: 5px;
+        }
+
+        .stat-change {
+            font-size: 14px;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .stat-change.positive {
+            color: #4caf50;
+        }
+
+        .stat-change.negative {
+            color: #f44336;
+        }
+
+        .add-measurement-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .add-measurement-btn:active {
+            transform: scale(0.98);
+        }
+
+        .chart-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .chart-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--tg-theme-text-color, #000);
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+
+        .chart-tab {
+            padding: 8px 16px;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .chart-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .history-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .history-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--tg-theme-text-color, #000);
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .history-date {
+            font-weight: 500;
+            color: var(--tg-theme-text-color, #000);
+        }
+
+        .history-measurements {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .measurement-badge {
+            background: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--tg-theme-text-color, #000);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--tg-theme-hint-color, #666);
+            font-size: 14px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-btn.save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-btn.cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            color: var(--tg-theme-hint-color, #999);
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .nav-btn.active {
+            color: #667eea;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .photo-section {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .photo-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .photo-placeholder {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 48px;
+        }
+
+        .photo-date {
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #666);
+        }
+
+        .add-photo-btn {
+            width: 100%;
+            padding: 15px;
+            background: white;
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .goals-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .goal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .goal-info {
+            flex: 1;
+        }
+
+        .goal-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .goal-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .goal-value {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #666);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📏 Body Tracker</h1>
+    </div>
+
+    <!-- Вкладка измерений -->
+    <div id="measurements-tab" class="tab-content active">
+        <div class="container">
+            <div class="current-stats">
+                <div class="stats-title">Текущие показатели</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="current-weight">—</div>
+                        <div class="stat-label">Вес (кг)</div>
+                        <div class="stat-change" id="weight-change"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="current-chest">—</div>
+                        <div class="stat-label">Грудь (см)</div>
+                        <div class="stat-change" id="chest-change"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="current-waist">—</div>
+                        <div class="stat-label">Талия (см)</div>
+                        <div class="stat-change" id="waist-change"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="current-hips">—</div>
+                        <div class="stat-label">Бедра (см)</div>
+                        <div class="stat-change" id="hips-change"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="add-measurement-btn" onclick="openMeasurementModal()">
+                ➕ Добавить замеры
+            </button>
+
+            <div class="chart-section">
+                <div class="chart-title">📈 График прогресса</div>
+                <div class="chart-tabs">
+                    <button class="chart-tab active" onclick="switchChart('weight')">Вес</button>
+                    <button class="chart-tab" onclick="switchChart('chest')">Грудь</button>
+                    <button class="chart-tab" onclick="switchChart('waist')">Талия</button>
+                    <button class="chart-tab" onclick="switchChart('hips')">Бедра</button>
+                    <button class="chart-tab" onclick="switchChart('arms')">Руки</button>
+                </div>
+                <canvas id="progressChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="history-section">
+                <div class="history-title">📋 История замеров</div>
+                <div id="history-list">
+                    <div class="empty-state">
+                        <div class="empty-icon">📏</div>
+                        <div>Нет замеров</div>
+                        <div style="font-size: 14px; margin-top: 5px;">Добавьте первый замер</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладка фото -->
+    <div id="photos-tab" class="tab-content">
+        <div class="container">
+            <button class="add-photo-btn" onclick="addPhoto()">
+                📸 Добавить фото прогресса
+            </button>
+            
+            <div class="photo-section" id="photo-grid">
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon">📸</div>
+                    <div>Нет фото</div>
+                    <div style="font-size: 14px; margin-top: 5px;">Добавьте фото для отслеживания визуального прогресса</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладка целей -->
+    <div id="goals-tab" class="tab-content">
+        <div class="container">
+            <button class="add-measurement-btn" onclick="openGoalModal()">
+                🎯 Добавить цель
+            </button>
+
+            <div class="goals-section">
+                <div class="stats-title">Активные цели</div>
+                <div id="goals-list">
+                    <div class="goal-item">
+                        <div class="goal-info">
+                            <div class="goal-name">Снизить вес до 75 кг</div>
+                            <div class="goal-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 60%"></div>
+                                </div>
+                                <span class="goal-value">78/75 кг</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="goal-item">
+                        <div class="goal-info">
+                            <div class="goal-name">Уменьшить талию до 80 см</div>
+                            <div class="goal-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 40%"></div>
+                                </div>
+                                <span class="goal-value">85/80 см</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления замеров -->
+    <div class="modal" id="measurement-modal">
+        <div class="modal-content">
+            <div class="modal-title">📏 Новые замеры</div>
+            
+            <div class="input-group">
+                <label class="input-label">Дата</label>
+                <input type="date" class="input-field" id="measurement-date">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Вес (кг)</label>
+                <input type="number" step="0.1" class="input-field" id="weight-input" placeholder="75.5">
+            </div>
+
+            <div class="input-row">
+                <div class="input-group">
+                    <label class="input-label">Грудь (см)</label>
+                    <input type="number" class="input-field" id="chest-input" placeholder="100">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Талия (см)</label>
+                    <input type="number" class="input-field" id="waist-input" placeholder="85">
+                </div>
+            </div>
+
+            <div class="input-row">
+                <div class="input-group">
+                    <label class="input-label">Бедра (см)</label>
+                    <input type="number" class="input-field" id="hips-input" placeholder="95">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Бицепс (см)</label>
+                    <input type="number" class="input-field" id="arms-input" placeholder="35">
+                </div>
+            </div>
+
+            <div class="input-row">
+                <div class="input-group">
+                    <label class="input-label">Бедро (см)</label>
+                    <input type="number" class="input-field" id="thigh-input" placeholder="55">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Голень (см)</label>
+                    <input type="number" class="input-field" id="calf-input" placeholder="38">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Заметки</label>
+                <input type="text" class="input-field" id="notes-input" placeholder="Начал новую программу...">
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeMeasurementModal()">Отмена</button>
+                <button class="modal-btn save" onclick="saveMeasurement()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Нижняя навигация -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="showTab('measurements')">
+            <span class="nav-icon">📏</span>
+            <span>Замеры</span>
+        </button>
+        <button class="nav-btn" onclick="showTab('photos')">
+            <span class="nav-icon">📸</span>
+            <span>Фото</span>
+        </button>
+        <button class="nav-btn" onclick="showTab('goals')">
+            <span class="nav-icon">🎯</span>
+            <span>Цели</span>
+        </button>
+    </div>
+
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // Данные
+        let measurements = [];
+        let photos = [];
+        let goals = [];
+        let currentChart = null;
+        let currentMetric = 'weight';
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            // Установка текущей даты
+            document.getElementById('measurement-date').value = new Date().toISOString().split('T')[0];
+            
+            // Загрузка данных
+            loadData();
+            updateDisplay();
+            initChart();
+        });
+
+        function showTab(tabName) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Показать выбранную вкладку
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Обновить активную кнопку
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Вибрация
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function openMeasurementModal() {
+            document.getElementById('measurement-modal').classList.add('active');
+            
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function closeMeasurementModal() {
+            document.getElementById('measurement-modal').classList.remove('active');
+        }
+
+        function saveMeasurement() {
+            const measurement = {
+                date: document.getElementById('measurement-date').value,
+                weight: parseFloat(document.getElementById('weight-input').value) || null,
+                chest: parseInt(document.getElementById('chest-input').value) || null,
+                waist: parseInt(document.getElementById('waist-input').value) || null,
+                hips: parseInt(document.getElementById('hips-input').value) || null,
+                arms: parseInt(document.getElementById('arms-input').value) || null,
+                thigh: parseInt(document.getElementById('thigh-input').value) || null,
+                calf: parseInt(document.getElementById('calf-input').value) || null,
+                notes: document.getElementById('notes-input').value
+            };
+
+            // Проверка, что хотя бы одно измерение введено
+            const hasData = Object.values(measurement).some(val => val && val !== measurement.date && val !== measurement.notes);
+            
+            if (!hasData) {
+                tg.showAlert('Введите хотя бы одно измерение');
+                return;
+            }
+
+            measurements.push(measurement);
+            measurements.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            saveData();
+            updateDisplay();
+            updateChart();
+            closeMeasurementModal();
+            clearForm();
+            
+            tg.showPopup({
+                title: 'Сохранено!',
+                message: 'Замеры добавлены',
+                buttons: [{type: 'ok'}]
+            });
+            
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('weight-input').value = '';
+            document.getElementById('chest-input').value = '';
+            document.getElementById('waist-input').value = '';
+            document.getElementById('hips-input').value = '';
+            document.getElementById('arms-input').value = '';
+            document.getElementById('thigh-input').value = '';
+            document.getElementById('calf-input').value = '';
+            document.getElementById('notes-input').value = '';
+        }
+
+        function updateDisplay() {
+            // Обновление текущих показателей
+            if (measurements.length > 0) {
+                const latest = measurements[measurements.length - 1];
+                const previous = measurements.length > 1 ? measurements[measurements.length - 2] : null;
+                
+                // Вес
+                if (latest.weight) {
+                    document.getElementById('current-weight').textContent = latest.weight;
+                    if (previous && previous.weight) {
+                        const change = latest.weight - previous.weight;
+                        const changeEl = document.getElementById('weight-change');
+                        changeEl.textContent = (change > 0 ? '+' : '') + change.toFixed(1) + ' кг';
+                        changeEl.className = 'stat-change ' + (change < 0 ? 'negative' : 'positive');
+                    }
+                }
+                
+                // Грудь
+                if (latest.chest) {
+                    document.getElementById('current-chest').textContent = latest.chest;
+                    if (previous && previous.chest) {
+                        const change = latest.chest - previous.chest;
+                        const changeEl = document.getElementById('chest-change');
+                        changeEl.textContent = (change > 0 ? '+' : '') + change + ' см';
+                        changeEl.className = 'stat-change ' + (change > 0 ? 'positive' : 'negative');
+                    }
+                }
+                
+                // Талия
+                if (latest.waist) {
+                    document.getElementById('current-waist').textContent = latest.waist;
+                    if (previous && previous.waist) {
+                        const change = latest.waist - previous.waist;
+                        const changeEl = document.getElementById('waist-change');
+                        changeEl.textContent = (change > 0 ? '+' : '') + change + ' см';
+                        changeEl.className = 'stat-change ' + (change < 0 ? 'negative' : 'positive');
+                    }
+                }
+                
+                // Бедра
+                if (latest.hips) {
+                    document.getElementById('current-hips').textContent = latest.hips;
+                    if (previous && previous.hips) {
+                        const change = latest.hips - previous.hips;
+                        const changeEl = document.getElementById('hips-change');
+                        changeEl.textContent = (change > 0 ? '+' : '') + change + ' см';
+                        changeEl.className = 'stat-change ' + (change < 0 ? 'negative' : 'positive');
+                    }
+                }
+            }
+            
+            // Обновление истории
+            updateHistory();
+        }
+
+        function updateHistory() {
+            const historyList = document.getElementById('history-list');
+            
+            if (measurements.length === 0) {
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📏</div>
+                        <div>Нет замеров</div>
+                        <div style="font-size: 14px; margin-top: 5px;">Добавьте первый замер</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedMeasurements = [...measurements].reverse();
+            historyList.innerHTML = sortedMeasurements.map(m => {
+                const date = new Date(m.date);
+                const dateStr = date.toLocaleDateString('ru-RU', { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
+                
+                const badges = [];
+                if (m.weight) badges.push(`Вес: ${m.weight} кг`);
+                if (m.chest) badges.push(`Грудь: ${m.chest} см`);
+                if (m.waist) badges.push(`Талия: ${m.waist} см`);
+                if (m.hips) badges.push(`Бедра: ${m.hips} см`);
+                
+                return `
+                    <div class="history-item">
+                        <div>
+                            <div class="history-date">${dateStr}</div>
+                            <div class="history-measurements">
+                                ${badges.map(b => `<span class="measurement-badge">${b}</span>`).join('')}
+                            </div>
+                            ${m.notes ? `<div style="margin-top: 8px; font-size: 12px; color: #666;">${m.notes}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Вес',
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+            
+            updateChart();
+        }
+
+        function switchChart(metric) {
+            currentMetric = metric;
+            
+            // Обновление активной вкладки
+            document.querySelectorAll('.chart-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            updateChart();
+            
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function updateChart() {
+            if (!currentChart) return;
+            
+            const data = measurements
+                .filter(m => m[currentMetric])
+                .map(m => ({
+                    x: new Date(m.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
+                    y: m[currentMetric]
+                }));
+            
+            currentChart.data.labels = data.map(d => d.x);
+            currentChart.data.datasets[0].data = data.map(d => d.y);
+            currentChart.data.datasets[0].label = getMetricLabel(currentMetric);
+            currentChart.update();
+        }
+
+        function getMetricLabel(metric) {
+            const labels = {
+                weight: 'Вес (кг)',
+                chest: 'Грудь (см)',
+                waist: 'Талия (см)',
+                hips: 'Бедра (см)',
+                arms: 'Бицепс (см)'
+            };
+            return labels[metric] || metric;
+        }
+
+        function addPhoto() {
+            tg.showPopup({
+                title: '📸 Фото прогресса',
+                message: 'Функция добавления фото будет доступна в следующем обновлении',
+                buttons: [{type: 'ok'}]
+            });
+        }
+
+        function openGoalModal() {
+            tg.showPopup({
+                title: '🎯 Цели',
+                message: 'Функция постановки целей будет доступна в следующем обновлении',
+                buttons: [{type: 'ok'}]
+            });
+        }
+
+        function saveData() {
+            tg.CloudStorage.setItem('bodyMeasurements', JSON.stringify(measurements), (error) => {
+                if (error) {
+                    localStorage.setItem('bodyMeasurements', JSON.stringify(measurements));
+                }
+            });
+        }
+
+        function loadData() {
+            tg.CloudStorage.getItem('bodyMeasurements', (error, value) => {
+                if (value) {
+                    try {
+                        measurements = JSON.parse(value);
+                    } catch (e) {
+                        measurements = [];
+                    }
+                } else {
+                    const localData = localStorage.getItem('bodyMeasurements');
+                    if (localData) {
+                        try {
+                            measurements = JSON.parse(localData);
+                        } catch (e) {
+                            measurements = [];
+                        }
+                    }
+                }
+                updateDisplay();
+                updateChart();
+            });
+        }
+    </script>
+</body>
+</html>
