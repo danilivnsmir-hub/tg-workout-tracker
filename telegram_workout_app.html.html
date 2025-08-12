@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Workout Tracker - Telegram App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding-bottom: 60px;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: var(--tg-theme-header-bg-color, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .date-selector {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #ccc);
+        }
+
+        .date-selector input {
+            background: var(--tg-theme-bg-color, white);
+            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            color: var(--tg-theme-text-color, #000);
+        }
+
+        .quick-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 15px;
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+        }
+
+        .stat-mini {
+            background: var(--tg-theme-bg-color, white);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .stat-mini-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--tg-theme-link-color, #667eea);
+        }
+
+        .stat-mini-label {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #999);
+            margin-top: 4px;
+        }
+
+        .container {
+            padding: 15px;
+        }
+
+        .superset {
+            background: var(--tg-theme-bg-color, white);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+        }
+
+        .superset-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+        }
+
+        .superset-title {
+            font-weight: 600;
+            color: var(--tg-theme-link-color, #667eea);
+            font-size: 16px;
+        }
+
+        .exercise-block {
+            margin-bottom: 15px;
+        }
+
+        .exercise-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            background: var(--tg-theme-bg-color, white);
+            color: var(--tg-theme-text-color, #000);
+        }
+
+        .sets-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .set-block {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 8px;
+            padding: 8px;
+            border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+        }
+
+        .set-number {
+            font-size: 11px;
+            color: var(--tg-theme-hint-color, #999);
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        .set-inputs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .set-inputs input {
+            width: 50%;
+            padding: 6px 4px;
+            border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+            background: var(--tg-theme-bg-color, white);
+            color: var(--tg-theme-text-color, #000);
+        }
+
+        .set-inputs input:focus {
+            outline: none;
+            border-color: var(--tg-theme-link-color, #667eea);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--tg-theme-button-color, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+            color: var(--tg-theme-button-text-color, white);
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-add {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-link-color, #667eea);
+            border: 2px dashed var(--tg-theme-link-color, #667eea);
+            margin-bottom: 15px;
+        }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--tg-theme-bg-color, white);
+            border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+            padding: 10px 15px;
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: none;
+            color: var(--tg-theme-hint-color, #999);
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            color: var(--tg-theme-link-color, #667eea);
+        }
+
+        .tab-btn-icon {
+            font-size: 20px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .history-item {
+            background: var(--tg-theme-bg-color, white);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+        }
+
+        .history-date {
+            font-weight: 600;
+            color: var(--tg-theme-text-color, #000);
+            margin-bottom: 8px;
+        }
+
+        .history-stats {
+            display: flex;
+            justify-content: space-between;
+            color: var(--tg-theme-hint-color, #666);
+            font-size: 14px;
+        }
+
+        .exercise-item {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+
+        @media (max-width: 360px) {
+            .sets-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💪 Workout Tracker</h1>
+    </div>
+
+    <!-- Вкладка тренировки -->
+    <div id="workout-tab" class="tab-content active">
+        <div class="date-selector">
+            <label for="workout-date">Дата тренировки:</label>
+            <input type="date" id="workout-date">
+        </div>
+
+        <div class="quick-stats">
+            <div class="stat-mini">
+                <div class="stat-mini-value" id="current-volume">0</div>
+                <div class="stat-mini-label">Тоннаж (кг)</div>
+            </div>
+            <div class="stat-mini">
+                <div class="stat-mini-value" id="current-reps">0</div>
+                <div class="stat-mini-label">Повторений</div>
+            </div>
+        </div>
+
+        <div class="container" id="supersets-container">
+            <!-- Суперсеты добавляются динамически -->
+        </div>
+
+        <div class="container">
+            <button class="btn btn-add" onclick="addSuperset()">➕ Добавить суперсет</button>
+            <button class="btn" onclick="saveWorkout()">💾 Сохранить тренировку</button>
+        </div>
+    </div>
+
+    <!-- Вкладка истории -->
+    <div id="history-tab" class="tab-content">
+        <div class="container" id="history-container">
+            <div class="loading">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- Вкладка статистики -->
+    <div id="stats-tab" class="tab-content">
+        <div class="container">
+            <div class="quick-stats">
+                <div class="stat-mini">
+                    <div class="stat-mini-value" id="total-workouts">0</div>
+                    <div class="stat-mini-label">Тренировок</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value" id="total-volume">0</div>
+                    <div class="stat-mini-label">Общий тоннаж</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value" id="avg-volume">0</div>
+                    <div class="stat-mini-label">Средний тоннаж</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value" id="total-exercises">0</div>
+                    <div class="stat-mini-label">Упражнений</div>
+                </div>
+            </div>
+            
+            <h3 style="margin: 20px 0 10px; color: var(--tg-theme-text-color, #000);">Топ упражнений:</h3>
+            <div id="top-exercises"></div>
+        </div>
+    </div>
+
+    <!-- Вкладка упражнений -->
+    <div id="exercises-tab" class="tab-content">
+        <div class="container">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="new-exercise" placeholder="Новое упражнение" style="flex: 1; padding: 10px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 8px;">
+                <button class="btn btn-small" onclick="addExercise()">Добавить</button>
+            </div>
+            <div id="exercises-list"></div>
+        </div>
+    </div>
+
+    <!-- Нижняя панель навигации -->
+    <div class="bottom-bar">
+        <button class="tab-btn active" onclick="showTab('workout')">
+            <span class="tab-btn-icon">🏋️</span>
+            <span>Тренировка</span>
+        </button>
+        <button class="tab-btn" onclick="showTab('history')">
+            <span class="tab-btn-icon">📋</span>
+            <span>История</span>
+        </button>
+        <button class="tab-btn" onclick="showTab('stats')">
+            <span class="tab-btn-icon">📊</span>
+            <span>Статистика</span>
+        </button>
+        <button class="tab-btn" onclick="showTab('exercises')">
+            <span class="tab-btn-icon">💪</span>
+            <span>Упражнения</span>
+        </button>
+    </div>
+
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // Настройка темы
+        tg.setHeaderColor('secondary_bg_color');
+        tg.setBackgroundColor('bg_color');
+
+        // База упражнений
+        let exercises = [
+            'Подтягивания широким хватом',
+            'Подтягивания узким хватом',
+            'Отжимания на брусьях',
+            'Жим лежа штанга',
+            'Жим гантелей лежа',
+            'Разгибания ног',
+            'Сгибания ног',
+            'Приседания со штангой',
+            'Жим ногами',
+            'Тяга верхнего блока',
+            'Тяга горизонтального блока',
+            'Жим гантелей сидя',
+            'Махи в стороны',
+            'Подъем штанги на бицепс',
+            'Французский жим',
+            'Сведение рук в тренажере',
+            'Разводка гантелей',
+            'Гиперэкстензия',
+            'Скручивания',
+            'Планка'
+        ];
+
+        let currentSupersetCount = 0;
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            // Установка текущей даты
+            document.getElementById('workout-date').value = new Date().toISOString().split('T')[0];
+            
+            // Загрузка данных
+            loadData();
+            
+            // Добавление начальных суперсетов
+            addSuperset();
+            addSuperset();
+            addSuperset();
+            
+            // Обновление интерфейса
+            updateExercisesList();
+            updateStats();
+        });
+
+        function showTab(tabName) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Показать выбранную вкладку
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Обновить активную кнопку
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Обновить контент
+            if (tabName === 'history') {
+                updateHistory();
+            } else if (tabName === 'stats') {
+                updateStats();
+            }
+            
+            // Вибрация при переключении (если поддерживается)
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function addSuperset() {
+            currentSupersetCount++;
+            const container = document.getElementById('supersets-container');
+            
+            const supersetDiv = document.createElement('div');
+            supersetDiv.className = 'superset';
+            supersetDiv.id = `superset-${currentSupersetCount}`;
+            
+            supersetDiv.innerHTML = `
+                <div class="superset-header">
+                    <span class="superset-title">Суперсет ${currentSupersetCount}</span>
+                    <button class="btn btn-small btn-danger" onclick="removeSuperset(${currentSupersetCount})">✕</button>
+                </div>
+                
+                <div class="exercise-block">
+                    <select class="exercise-select" onchange="updateCurrentStats()">
+                        <option value="">Выберите упражнение 1</option>
+                        ${exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('')}
+                    </select>
+                    <div class="sets-container" id="sets-${currentSupersetCount}-1">
+                        ${createSetBlocks(4)}
+                    </div>
+                    <button class="btn btn-small" style="margin-top: 8px;" onclick="addSet(${currentSupersetCount}, 1)">+ Подход</button>
+                </div>
+                
+                <div class="exercise-block">
+                    <select class="exercise-select" onchange="updateCurrentStats()">
+                        <option value="">Выберите упражнение 2</option>
+                        ${exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('')}
+                    </select>
+                    <div class="sets-container" id="sets-${currentSupersetCount}-2">
+                        ${createSetBlocks(4)}
+                    </div>
+                    <button class="btn btn-small" style="margin-top: 8px;" onclick="addSet(${currentSupersetCount}, 2)">+ Подход</button>
+                </div>
+            `;
+            
+            container.appendChild(supersetDiv);
+            
+            // Вибрация
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function createSetBlocks(count) {
+            let html = '';
+            for (let i = 1; i <= count; i++) {
+                html += `
+                    <div class="set-block">
+                        <div class="set-number">Подход ${i}</div>
+                        <div class="set-inputs">
+                            <input type="number" placeholder="кг" class="weight-input" onchange="updateCurrentStats()">
+                            <input type="number" placeholder="×" class="reps-input" onchange="updateCurrentStats()">
+                        </div>
+                    </div>
+                `;
+            }
+            return html;
+        }
+
+        function addSet(supersetId, exerciseNum) {
+            const container = document.getElementById(`sets-${supersetId}-${exerciseNum}`);
+            const setCount = container.querySelectorAll('.set-block').length + 1;
+            
+            const setBlock = document.createElement('div');
+            setBlock.className = 'set-block';
+            setBlock.innerHTML = `
+                <div class="set-number">Подход ${setCount}</div>
+                <div class="set-inputs">
+                    <input type="number" placeholder="кг" class="weight-input" onchange="updateCurrentStats()">
+                    <input type="number" placeholder="×" class="reps-input" onchange="updateCurrentStats()">
+                </div>
+            `;
+            
+            container.appendChild(setBlock);
+            
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function removeSuperset(id) {
+            const superset = document.getElementById(`superset-${id}`);
+            if (superset) {
+                superset.remove();
+                updateCurrentStats();
+                
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('medium');
+                }
+            }
+        }
+
+        function updateCurrentStats() {
+            let totalVolume = 0;
+            let totalReps = 0;
+            
+            document.querySelectorAll('.superset').forEach(superset => {
+                superset.querySelectorAll('.exercise-block').forEach(block => {
+                    const exerciseName = block.querySelector('.exercise-select').value;
+                    if (!exerciseName) return;
+                    
+                    block.querySelectorAll('.set-block').forEach(setBlock => {
+                        const weight = parseFloat(setBlock.querySelector('.weight-input').value) || 0;
+                        const reps = parseInt(setBlock.querySelector('.reps-input').value) || 0;
+                        
+                        if (weight > 0 && reps > 0) {
+                            totalVolume += weight * reps;
+                            totalReps += reps;
+                        }
+                    });
+                });
+            });
+            
+            document.getElementById('current-volume').textContent = Math.round(totalVolume);
+            document.getElementById('current-reps').textContent = totalReps;
+        }
+
+        function saveWorkout() {
+            const date = document.getElementById('workout-date').value;
+            const supersets = document.querySelectorAll('.superset');
+            
+            const workoutData = {
+                date: date,
+                exercises: [],
+                totalVolume: 0,
+                totalReps: 0,
+                userId: tg.initDataUnsafe?.user?.id || 'local'
+            };
+            
+            supersets.forEach((superset, supersetIndex) => {
+                const exerciseBlocks = superset.querySelectorAll('.exercise-block');
+                
+                exerciseBlocks.forEach(block => {
+                    const exerciseName = block.querySelector('.exercise-select').value;
+                    if (!exerciseName) return;
+                    
+                    const sets = [];
+                    let exerciseVolume = 0;
+                    let exerciseReps = 0;
+                    let maxWeight = 0;
+                    
+                    block.querySelectorAll('.set-block').forEach(setBlock => {
+                        const weight = parseFloat(setBlock.querySelector('.weight-input').value) || 0;
+                        const reps = parseInt(setBlock.querySelector('.reps-input').value) || 0;
+                        
+                        if (weight > 0 && reps > 0) {
+                            sets.push({ weight, reps });
+                            exerciseVolume += weight * reps;
+                            exerciseReps += reps;
+                            maxWeight = Math.max(maxWeight, weight);
+                        }
+                    });
+                    
+                    if (sets.length > 0) {
+                        workoutData.exercises.push({
+                            superset: supersetIndex + 1,
+                            name: exerciseName,
+                            sets: sets,
+                            volume: exerciseVolume,
+                            totalReps: exerciseReps,
+                            maxWeight: maxWeight
+                        });
+                        
+                        workoutData.totalVolume += exerciseVolume;
+                        workoutData.totalReps += exerciseReps;
+                    }
+                });
+            });
+            
+            if (workoutData.exercises.length === 0) {
+                tg.showAlert('Добавьте хотя бы одно упражнение с весом и повторениями!');
+                return;
+            }
+            
+            // Сохранение в CloudStorage
+            saveToCloud(workoutData);
+            
+            // Показ уведомления
+            tg.showPopup({
+                title: 'Тренировка сохранена!',
+                message: `Тоннаж: ${workoutData.totalVolume} кг\nПовторений: ${workoutData.totalReps}`,
+                buttons: [{type: 'ok'}]
+            });
+            
+            // Вибрация успеха
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+            
+            // Очистка формы
+            setTimeout(() => {
+                document.getElementById('supersets-container').innerHTML = '';
+                currentSupersetCount = 0;
+                addSuperset();
+                addSuperset();
+                addSuperset();
+                updateCurrentStats();
+            }, 1000);
+        }
+
+        function updateHistory() {
+            const container = document.getElementById('history-container');
+            
+            // Загрузка истории из CloudStorage
+            loadFromCloud((workouts) => {
+                if (!workouts || workouts.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <div>Нет сохраненных тренировок</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                workouts.slice().reverse().forEach((workout, index) => {
+                    const realIndex = workouts.length - 1 - index;
+                    const date = new Date(workout.date);
+                    const dateStr = date.toLocaleDateString('ru-RU', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                    });
+                    
+                    html += `
+                        <div class="history-item">
+                            <div class="history-date">${dateStr}</div>
+                            <div class="history-stats">
+                                <span>💪 ${workout.exercises.length} упр.</span>
+                                <span>⚖️ ${workout.totalVolume} кг</span>
+                                <span>🔄 ${workout.totalReps} повт.</span>
+                            </div>
+                            <button class="btn btn-small" style="margin-top: 10px;" onclick="viewWorkout(${realIndex})">Подробнее</button>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            });
+        }
+
+        function viewWorkout(index) {
+            loadFromCloud((workouts) => {
+                const workout = workouts[index];
+                if (!workout) return;
+                
+                let details = `📅 ${new Date(workout.date).toLocaleDateString('ru-RU')}\n\n`;
+                
+                let currentSuperset = 0;
+                workout.exercises.forEach(exercise => {
+                    if (exercise.superset !== currentSuperset) {
+                        currentSuperset = exercise.superset;
+                        details += `\n🔄 Суперсет ${currentSuperset}:\n`;
+                    }
+                    
+                    details += `${exercise.name}:\n`;
+                    details += exercise.sets.map((set, i) => `  ${i+1}. ${set.weight}кг × ${set.reps}`).join('\n');
+                    details += `\n  💪 Объем: ${exercise.volume}кг\n`;
+                });
+                
+                details += `\n📊 Итого:\n`;
+                details += `⚖️ Тоннаж: ${workout.totalVolume} кг\n`;
+                details += `🔄 Повторений: ${workout.totalReps}`;
+                
+                tg.showPopup({
+                    title: 'Детали тренировки',
+                    message: details,
+                    buttons: [{type: 'ok'}]
+                });
+            });
+        }
+
+        function updateStats() {
+            loadFromCloud((workouts) => {
+                if (!workouts) workouts = [];
+                
+                const totalWorkouts = workouts.length;
+                const totalVolume = workouts.reduce((sum, w) => sum + w.totalVolume, 0);
+                const avgVolume = totalWorkouts > 0 ? Math.round(totalVolume / totalWorkouts) : 0;
+                
+                // Подсчет упражнений
+                const exerciseCount = {};
+                workouts.forEach(workout => {
+                    workout.exercises.forEach(ex => {
+                        exerciseCount[ex.name] = (exerciseCount[ex.name] || 0) + 1;
+                    });
+                });
+                
+                const totalExercises = Object.keys(exerciseCount).length;
+                
+                // Обновление статистики
+                document.getElementById('total-workouts').textContent = totalWorkouts;
+                document.getElementById('total-volume').textContent = totalVolume > 1000 ? 
+                    (totalVolume / 1000).toFixed(1) + 'т' : totalVolume;
+                document.getElementById('avg-volume').textContent = avgVolume;
+                document.getElementById('total-exercises').textContent = totalExercises;
+                
+                // Топ упражнений
+                const topExercises = Object.entries(exerciseCount)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+                
+                const topExercisesHtml = topExercises.map(([name, count]) => `
+                    <div class="exercise-item">
+                        <span>${name}</span>
+                        <span>${count} раз</span>
+                    </div>
+                `).join('');
+                
+                document.getElementById('top-exercises').innerHTML = topExercisesHtml || 
+                    '<div class="empty-state">Нет данных</div>';
+            });
+        }
+
+        function addExercise() {
+            const input = document.getElementById('new-exercise');
+            const exerciseName = input.value.trim();
+            
+            if (exerciseName && !exercises.includes(exerciseName)) {
+                exercises.push(exerciseName);
+                exercises.sort();
+                saveExercises();
+                updateExercisesList();
+                input.value = '';
+                
+                tg.showPopup({
+                    title: 'Успешно!',
+                    message: 'Упражнение добавлено',
+                    buttons: [{type: 'ok'}]
+                });
+                
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            }
+        }
+
+        function updateExercisesList() {
+            const list = document.getElementById('exercises-list');
+            list.innerHTML = exercises.map(ex => `
+                <div class="exercise-item">
+                    <span>${ex}</span>
+                    <button class="btn btn-small btn-danger" onclick="removeExercise('${ex}')">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function removeExercise(name) {
+            tg.showConfirm(`Удалить упражнение "${name}"?`, (confirmed) => {
+                if (confirmed) {
+                    exercises = exercises.filter(ex => ex !== name);
+                    saveExercises();
+                    updateExercisesList();
+                    
+                    if (tg.HapticFeedback) {
+                        tg.HapticFeedback.notificationOccurred('warning');
+                    }
+                }
+            });
+        }
+
+        // Работа с CloudStorage
+        function saveToCloud(workoutData) {
+            const key = 'workouts';
+            
+            tg.CloudStorage.getItem(key, (error, value) => {
+                let workouts = [];
+                if (value) {
+                    try {
+                        workouts = JSON.parse(value);
+                    } catch (e) {
+                        console.error('Error parsing workouts:', e);
+                    }
+                }
+                
+                workouts.push(workoutData);
+                
+                // Ограничение на 100 последних тренировок
+                if (workouts.length > 100) {
+                    workouts = workouts.slice(-100);
+                }
+                
+                tg.CloudStorage.setItem(key, JSON.stringify(workouts), (error) => {
+                    if (error) {
+                        console.error('Error saving to cloud:', error);
+                        // Fallback to localStorage
+                        localStorage.setItem(key, JSON.stringify(workouts));
+                    }
+                });
+            });
+        }
+
+        function loadFromCloud(callback) {
+            const key = 'workouts';
+            
+            tg.CloudStorage.getItem(key, (error, value) => {
+                if (error) {
+                    // Fallback to localStorage
+                    const localData = localStorage.getItem(key);
+                    if (localData) {
+                        try {
+                            callback(JSON.parse(localData));
+                        } catch (e) {
+                            callback([]);
+                        }
+                    } else {
+                        callback([]);
+                    }
+                } else {
+                    if (value) {
+                        try {
+                            callback(JSON.parse(value));
+                        } catch (e) {
+                            callback([]);
+                        }
+                    } else {
+                        callback([]);
+                    }
+                }
+            });
+        }
+
+        function saveExercises() {
+            tg.CloudStorage.setItem('exercises', JSON.stringify(exercises), (error) => {
+                if (error) {
+                    localStorage.setItem('exercises', JSON.stringify(exercises));
+                }
+            });
+        }
+
+        function loadData() {
+            // Загрузка упражнений
+            tg.CloudStorage.getItem('exercises', (error, value) => {
+                if (value) {
+                    try {
+                        exercises = JSON.parse(value);
+                    } catch (e) {
+                        console.error('Error parsing exercises:', e);
+                    }
+                } else {
+                    // Fallback to localStorage
+                    const localExercises = localStorage.getItem('exercises');
+                    if (localExercises) {
+                        try {
+                            exercises = JSON.parse(localExercises);
+                        } catch (e) {
+                            console.error('Error parsing local exercises:', e);
+                        }
+                    }
+                }
+                updateExercisesList();
+            });
+        }
+
+        // Обработка кнопки "Назад"
+        tg.BackButton.onClick(() => {
+            tg.close();
+        });
+    </script>
+</body>
+</html>
