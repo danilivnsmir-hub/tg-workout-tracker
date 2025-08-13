@@ -849,75 +849,88 @@
       // Убираем фразы о времени приема пищи
       let cleanText = text.replace(/на (завтрак|обед|ужин|перекус)/gi, '').trim();
 
-      // Обрабатываем сложные блюда
+      // Обрабатываем сложные блюда (как раньше)
       const complexPatterns = [
         { pattern: /(\d+)\s*блин[а-я]*\s*с\s*([а-яё\s]+)/i, handler: parsePancakes },
         { pattern: /(\d+)\s*яй[а-яц]+/i, handler: parseEggs },
         { pattern: /тарелк[а-я]*\s+([а-яё]+)/i, handler: parsePlate }
       ];
 
-      // Проверяем сложные паттерны
       for (let { pattern, handler } of complexPatterns) {
         const match = cleanText.match(pattern);
         if (match) {
           const items = handler(match, cleanText);
           if (items.length > 0) {
             results.push(...items);
-            // Удаляем обработанную часть из текста
             cleanText = cleanText.replace(pattern, '').trim();
           }
         }
       }
 
-      // Ищем продукты в базе
-      const foundProducts = new Set();
-      for (let food in foodDatabase) {
-        if (cleanText.includes(food) && !foundProducts.has(food)) {
+      // Разделяем "базу" и "добавки" по первому "с"
+      let baseText = cleanText;
+      let addonsText = '';
+      const withIdx = cleanText.indexOf(' с ');
+      if (withIdx !== -1) {
+        baseText = cleanText.slice(0, withIdx).trim();
+        addonsText = cleanText.slice(withIdx + 3).trim();
+      }
+
+      // Вспомогательный разбор отдельного куска текста
+      function parseProductsInText(textPart, { applyVesselHints = true } = {}) {
+        const partResults = [];
+        const found = new Set();
+
+        // Список продуктов, упомянутых в этом куске
+        const mentioned = Object.keys(foodDatabase).filter(k => textPart.includes(k));
+
+        for (let food of mentioned) {
+          if (found.has(food)) continue;
           const data = foodDatabase[food];
-          let amount = 100; // По умолчанию 100г
+          let amount = 100; // базово 100г
 
-          // Ищем количество перед продуктом
-          const quantityPattern = new RegExp(`(\\d+)\\s*(г|гр|грамм|мл|ml|шт|штук|порц)?\\s*${food}`, 'i');
-          const quantityMatch = cleanText.match(quantityPattern);
+          // 1) Кол-во ПЕРЕД продуктом: "200г творога"
+          const qtyBefore = new RegExp(`(\\d+)\\s*(г|гр|грамм|мл|ml|шт|штук|порц)?\\s*${food}`, 'i').exec(textPart);
+          // 2) Кол-во ПОСЛЕ продукта: "творог 200г"
+          const qtyAfter = new RegExp(`${food}\\s*(\\d+)\\s*(г|гр|грамм|мл|ml|шт|штук|порц)?`, 'i').exec(textPart);
 
-          if (quantityMatch) {
-            amount = parseInt(quantityMatch[1]);
-            const unit = quantityMatch[2];
+          let unit = null;
+          if (qtyBefore) {
+            amount = parseInt(qtyBefore[1]);
+            unit = qtyBefore[2] || null;
+          } else if (qtyAfter) {
+            amount = parseInt(qtyAfter[1]);
+            unit = qtyAfter[2] || null;
+          } else if (applyVesselHints) {
+            // Евристики по "посуде" только для базовой части, не для добавок
+            if (textPart.includes('тарелк') || textPart.includes('порц')) amount = 250;
+            else if (textPart.includes('чашк') || textPart.includes('стакан')) amount = 200;
+            else if (textPart.includes('ложк')) amount = 20;
+          }
 
-            // Корректируем для штучных продуктов
-            if (food === 'яйцо' && (!unit || unit.includes('шт'))) {
-              amount = amount * 50; // одно яйцо ~50г
-            } else if (food === 'блин' && (!unit || unit.includes('шт'))) {
-              amount = amount * 60; // один блин ~60г
-            } else if (food === 'котлета' && (!unit || unit.includes('шт'))) {
-              amount = amount * 100; // одна котлета ~100г
-            }
-          } else {
-            // Проверяем общие указания количества
-            const generalAmount = cleanText.match(/(\d+)\s*(г|гр|грамм|мл|ml)/i);
-            if (generalAmount && !cleanText.match(/\d+\s*(г|гр|грамм|мл|ml)\s+\w+/i)) {
-              amount = parseInt(generalAmount[1]);
-            } else if (cleanText.includes('тарелк') || cleanText.includes('порц')) {
-              amount = 250; // Стандартная порция
-            } else if (cleanText.includes('чашк') || cleanText.includes('стакан')) {
-              amount = 200;
-            } else if (cleanText.includes('ложк')) {
-              amount = 20;
-            } else {
-              // Специальные случаи для конкретных продуктов
-              if (food === 'яйцо') amount = 50;
-              else if (food === 'банан') amount = 120;
-              else if (food === 'яблоко') amount = 150;
-              else if (food === 'апельсин') amount = 180;
-              else if (food === 'хлеб') amount = 30; // кусочек хлеба
-              else if (food === 'сыр') amount = 20; // ломтик сыра
-            }
+          // Корректировка для штучных продуктов при единицах "шт"
+          if (unit && (unit.includes('шт') || unit.includes('штук') || unit.includes('порц'))) {
+            if (food === 'яйцо') amount = amount * 50; // ~50г
+            else if (food === 'блин') amount = amount * 60; // ~60г
+            else if (food === 'котлета') amount = amount * 100; // ~100г
+          }
+
+          // Если конкретного веса не указали — разумные дефолты по продуктам
+          if (!qtyBefore && !qtyAfter) {
+            if (food === 'яйцо') amount = 50;
+            else if (food === 'банан') amount = 130; // средний банан 120-150г
+            else if (food === 'яблоко') amount = 150;
+            else if (food === 'апельсин') amount = 180;
+            else if (food === 'хлеб') amount = 30; // ломтик
+            else if (food === 'сыр') amount = 20; // ломтик
+            else if (food === 'мед' || food === 'мёд') amount = 10; // чайная ложка
+            else if (food === 'джем' || food === 'варенье') amount = 20; // 1 ст. л. с горкой ~20г
           }
 
           const multiplier = amount / data.per;
-          results.push({
+          partResults.push({
             name: food.charAt(0).toUpperCase() + food.slice(1),
-            amount: amount,
+            amount,
             calories: Math.round(data.calories * multiplier),
             protein: Math.round(data.protein * multiplier * 10) / 10,
             fats: Math.round(data.fats * multiplier * 10) / 10,
@@ -925,8 +938,21 @@
             per100: { calories: data.calories, protein: data.protein, fats: data.fats, carbs: data.carbs }
           });
 
-          foundProducts.add(food);
+          found.add(food);
         }
+        return partResults;
+      }
+
+      // 1) Разбираем базовую часть — здесь допускаем подсказки по тарелке/чашке
+      if (baseText) {
+        results.push(...parseProductsInText(baseText, { applyVesselHints: true }));
+      }
+
+      // 2) Разбираем добавки после "с" — здесь не применяем общие веса и посуду
+      if (addonsText) {
+        // Разбиваем добавки по запятым/"и"
+        // Но для простоты всё равно пробегаем базой, просто без vessel hints
+        results.push(...parseProductsInText(addonsText, { applyVesselHints: false }));
       }
 
       return results;
