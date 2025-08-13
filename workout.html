@@ -15,8 +15,8 @@
 
     body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background: var(--tg-theme-bg-color, #ffff);
-    color: var(--tg-theme-text-color, #0000);
+    background: var(--tg-theme-bg-color, #fff);
+    color: var(--tg-theme-text-color, #000);
     padding-bottom: 60px;
     overflow-x: hidden;
     }
@@ -30,11 +30,27 @@
     top: 0;
     z-index: 100;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
     }
 
     .header h1 {
     font-size: 20px;
     font-weight: 600;
+    }
+
+    .header-back {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
     }
 
     .date-selector {
@@ -451,23 +467,23 @@
 
     <!-- Нижняя панель навигации -->
     <div class="bottom-bar">
-    <button class="tab-btn active" onclick="showTab('workout')">
+    <button class="tab-btn active" onclick="showTab(this, 'workout')">
     <span class="tab-btn-icon">🏋️</span>
     <span>Тренировка</span>
     </button>
-    <button class="tab-btn" onclick="showTab('history')">
+    <button class="tab-btn" onclick="showTab(this, 'history')">
     <span class="tab-btn-icon">📋</span>
     <span>История</span>
     </button>
-    <button class="tab-btn" onclick="showTab('stats')">
+    <button class="tab-btn" onclick="showTab(this, 'stats')">
     <span class="tab-btn-icon">📊</span>
     <span>Статистика</span>
     </button>
-    <button class="tab-btn" onclick="showTab('exercises')">
+    <button class="tab-btn" onclick="showTab(this, 'exercises')">
     <span class="tab-btn-icon">💪</span>
     <span>Упражнения</span>
     </button>
-    <button class="tab-btn" onclick="showTab('settings')">
+    <button class="tab-btn" onclick="showTab(this, 'settings')">
     <span class="tab-btn-icon">⚙️</span>
     <span>Настройки</span>
     </button>
@@ -526,15 +542,18 @@
     populateProgressExerciseSelect();
     updateModeUI();
     refreshRecordHints();
+
+    // Для четкого canvas на ретина
+    resizeCanvasToDevicePixelRatio(document.getElementById('progress-canvas'));
     });
     });
 
-    function showTab(tabName) {
+    function showTab(btn, tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.getElementById(tabName + '-tab').classList.add('active');
 
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
 
     if (tabName === 'history') {
     updateHistory();
@@ -584,6 +603,10 @@
     }
     }
 
+    function optionsHtml(arr) {
+      return arr.map(ex => `<option value="${escapeHtml(ex)}">${escapeHtml(ex)}</option>`).join('');
+    }
+
     function addSuperset() {
     currentSupersetCount++;
     const container = document.getElementById('supersets-container');
@@ -601,7 +624,7 @@
     <div class="exercise-block">
     <select class="exercise-select" onchange="updateCurrentStats(); refreshRecordHints();">
     <option value="">Выберите упражнение 1</option>
-    ${exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('')}
+    ${optionsHtml(exercises)}
     </select>
     <div class="record-hint"></div>
     <div class="sets-container" id="sets-${currentSupersetCount}-1">
@@ -613,7 +636,7 @@
     <div class="exercise-block">
     <select class="exercise-select" onchange="updateCurrentStats(); refreshRecordHints();">
     <option value="">Выберите упражнение 2</option>
-    ${exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('')}
+    ${optionsHtml(exercises)}
     </select>
     <div class="record-hint"></div>
     <div class="sets-container" id="sets-${currentSupersetCount}-2">
@@ -645,7 +668,7 @@
     <div class="exercise-block">
     <select class="exercise-select" onchange="updateCurrentStats(); refreshRecordHints();">
     <option value="">Выберите упражнение</option>
-    ${exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('')}
+    ${optionsHtml(exercises)}
     </select>
     <div class="record-hint"></div>
     <div class="sets-container" id="sets-${currentSupersetCount}-1">
@@ -674,20 +697,6 @@
     </div>
     `;
     }
-    function removeSet(btn) {
-    const setBlock = btn.closest('.set-block');
-    if (!setBlock) return;
-    const setsContainer = setBlock.parentElement; // .sets-container
-    setBlock.remove();
-    // Перенумерация
-    setsContainer.querySelectorAll('.set-block .set-number').forEach((el, idx) => {
-        el.textContent = `Подход ${idx + 1}`;
-    });
-    // Обновить стату
-    updateCurrentStats();
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    }
-
     return html;
     }
 
@@ -709,6 +718,7 @@
     container.appendChild(setBlock);
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
+
     function removeSet(btn) {
     const setBlock = btn.closest('.set-block');
     if (!setBlock) return;
@@ -717,14 +727,15 @@
 
     // Перенумерация
     setsContainer.querySelectorAll('.set-block .set-number').forEach((el, idx) => {
-    el.textContent = Подход ${idx + 1};
+    el.textContent = `Подход ${idx + 1}`;
     });
 
-// Обновить стату
-updateCurrentStats();
+    // Обновить стату
+    updateCurrentStats();
 
-if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-}
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    }
+
     function removeSuperset(id) {
     const superset = document.getElementById(`superset-${id}`);
     if (superset) {
@@ -975,6 +986,10 @@ if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     });
     }
 
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;'}[c]));
+    }
+
     function addExercise() {
     const input = document.getElementById('new-exercise');
     const exerciseName = input.value.trim();
@@ -999,12 +1014,19 @@ if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
     function updateExercisesList() {
     const list = document.getElementById('exercises-list');
-    list.innerHTML = exercises.map(ex => `
-    <div class="exercise-item">
-    <span>${ex}</span>
-    <button class="btn btn-small btn-danger" onclick="removeExercise('${ex}')">✕</button>
-    </div>
-    `).join('');
+    list.innerHTML = '';
+    exercises.forEach(ex => {
+      const item = document.createElement('div');
+      item.className = 'exercise-item';
+      const span = document.createElement('span');
+      span.textContent = ex;
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-small btn-danger';
+      btn.textContent = '✕';
+      btn.addEventListener('click', () => removeExercise(ex));
+      item.append(span, btn);
+      list.appendChild(item);
+    });
     }
 
     function removeExercise(name) {
@@ -1024,7 +1046,7 @@ if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     const sel = document.getElementById('progress-exercise-select');
     if (!sel) return;
     const current = sel.value;
-    sel.innerHTML = '<option value="">Выберите упражнение</option>' + exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
+    sel.innerHTML = '<option value="">Выберите упражнение</option>' + optionsHtml(exercises);
     if (current && exercises.includes(current)) sel.value = current;
     }
 
@@ -1158,6 +1180,15 @@ if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     ctx.fill();
     });
     });
+    }
+
+    // Retina scaling
+    function resizeCanvasToDevicePixelRatio(canvas, cssW = canvas.clientWidth, cssH = canvas.clientHeight) {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
     // Работа с CloudStorage (тренировки)
@@ -1295,6 +1326,14 @@ if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     tg.BackButton.onClick(() => {
     tg.close();
     });
+
+    function goBack() {
+      if (window.Telegram?.WebApp?.close) {
+        window.Telegram.WebApp.close();
+      } else {
+        history.back();
+      }
+    }
     </script>
 </body>
 </html>
