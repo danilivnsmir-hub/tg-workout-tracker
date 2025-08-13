@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Food Tracker - Telegram App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+    * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--tg-theme-bg-color, #ffff);
+    color: var(--tg-theme-text-color, #0000);
+    padding-bottom: 60px;
+    overflow-x: hidden;
+    }
+
+    .header {
+    background: linear-gradient(135deg, #48c774 0%, #3abb67 100%);
+    color: white;
+    padding: 15px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    }
+
+    .daily-summary {
+    background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+    padding: 15px;
+    border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+    }
+
+    .date-selector {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    }
+
+    .date-nav {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    }
+
+    .date-btn {
+    background: var(--tg-theme-button-color, #48c774);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    }
+
+    .current-date {
+    font-weight: 600;
+    color: var(--tg-theme-text-color, #000);
+    }
+
+    .calories-ring {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 15px;
+    position: relative;
+    }
+
+    .calories-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    }
+
+    .calories-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--tg-theme-text-color, #000);
+    }
+
+    .calories-label {
+    font-size: 12px;
+    color: var(--tg-theme-hint-color, #999);
+    }
+
+    .macros-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    }
+
+    .macro-card {
+    background: var(--tg-theme-bg-color, white);
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .macro-value {
+    font-size: 20px;
+    font-weight: bold;
+    }
+
+    .macro-label {
+    font-size: 11px;
+    color: var(--tg-theme-hint-color, #999);
+    margin-top: 2px;
+    }
+
+    .protein { color: #e74c3c; }
+    .fats { color: #f39c12; }
+    .carbs { color: #3498db; }
+
+    .container {
+    padding: 15px;
+    }
+
+    .quick-add {
+    background: linear-gradient(135deg, #48c774 0%, #3abb67 100%);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(72, 199, 116, 0.2);
+    }
+
+    .quick-add-title {
+    color: white;
+    font-weight: 600;
+    margin-bottom: 10px;
+    }
+
+    .input-group {
+    display: flex;
+    gap: 10px;
+    }
+
+    .food-input {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    background: white;
+    }
+
+    .add-btn {
+    padding: 12px 20px;
+    background: white;
+    color: #48c774;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    }
+
+    .meal-section {
+    background: var(--tg-theme-bg-color, white);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .meal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--tg-theme-hint-color, #f0f0f0);
+    }
+
+    .meal-title {
+    font-weight: 600;
+    color: var(--tg-theme-text-color, #000);
+    }
+
+    .meal-calories {
+    color: var(--tg-theme-hint-color, #666);
+    font-size: 14px;
+    }
+
+    .food-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    }
+
+    .food-info {
+    flex: 1;
+    }
+
+    .food-name {
+    font-weight: 500;
+    color: var(--tg-theme-text-color, #000);
+    margin-bottom: 2px;
+    }
+
+    .food-details {
+    font-size: 12px;
+    color: var(--tg-theme-hint-color, #999);
+    }
+
+    .food-calories {
+    font-weight: 600;
+    color: #48c774;
+    margin-right: 10px;
+    }
+
+    .delete-btn {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    }
+
+    .empty-meal {
+    text-align: center;
+    padding: 20px;
+    color: var(--tg-theme-hint-color, #999);
+    font-size: 14px;
+    }
+
+    .bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--tg-theme-bg-color, white);
+    border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+    padding: 10px 15px;
+    display: flex;
+    gap: 10px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+
+    .tab-btn {
+    flex: 1;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    color: var(--tg-theme-hint-color, #999);
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    }
+
+    .tab-btn.active {
+    color: #48c774;
+    }
+
+    .tab-btn-icon {
+    font-size: 20px;
+    }
+
+    .tab-content {
+    display: none;
+    }
+
+    .tab-content.active {
+    display: block;
+    }
+
+    .search-results {
+    background: white;
+    border-radius: 10px;
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .search-item {
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background 0.2s;
+    }
+
+    .search-item:hover {
+    background: #f8f9fa;
+    }
+
+    .search-item-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+    }
+
+    .search-item-info {
+    font-size: 12px;
+    color: #999;
+    }
+
+    .loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--tg-theme-hint-color, #999);
+    }
+
+    .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+    }
+
+    .stat-card {
+    background: var(--tg-theme-bg-color, white);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .stat-title {
+    font-size: 12px;
+    color: var(--tg-theme-hint-color, #999);
+    margin-bottom: 5px;
+    }
+
+    .stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #48c774;
+    }
+
+    .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+    }
+
+    .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #48c774 0%, #3abb67 100%);
+    transition: width 0.3s;
+    }
+    </style>
+</head>
+<body>
+    <div class="header">
+    <h1>🍽️ Food Tracker</h1>
+    </div>
+
+    <!-- Вкладка дневника питания -->
+    <div id="diary-tab" class="tab-content active">
+    <div class="daily-summary">
+    <div class="date-selector">
+    <div class="date-nav">
+    <button class="date-btn" onclick="changeDate(-1)">‹</button>
+    <span class="current-date" id="current-date">Сегодня</span>
+    <button class="date-btn" onclick="changeDate(1)">›</button>
+    </div>
+    </div>
+
+    <div class="calories-ring">
+    <svg width="120" height="120">
+    <circle cx="60" cy="60" r="50" fill="none" stroke="#f0f0f0" stroke-width="10"/>
+    <circle id="calories-progress" cx="60" cy="60" r="50" fill="none" stroke="#48c774" stroke-width="10"
+    stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)"
+    style="transition: stroke-dashoffset 0.5s"/>
+    </svg>
+    <div class="calories-text">
+    <div class="calories-value" id="total-calories">0</div>
+    <div class="calories-label">из <span id="target-calories">2000</span></div>
+    </div>
+    </div>
+
+    <div class="macros-grid">
+    <div class="macro-card">
+    <div class="macro-value protein" id="total-protein">0г</div>
+    <div class="macro-label">Белки</div>
+    </div>
+    <div class="macro-card">
+    <div class="macro-value fats" id="total-fats">0г</div>
+    <div class="macro-label">Жиры</div>
+    </div>
+    <div class="macro-card">
+    <div class="macro-value carbs" id="total-carbs">0г</div>
+    <div class="macro-label">Углеводы</div>
+    </div>
+    </div>
+    </div>
+
+    <div class="container">
+    <div class="quick-add">
+    <div class="quick-add-title">Быстрое добавление</div>
+    <div class="input-group">
+    <input type="text" class="food-input" id="food-input" 
+    placeholder="Например: овсянка с бананом">
+    <button class="add-btn" onclick="analyzeFood()">➕</button>
+    </div>
+    <div id="search-results" class="search-results" style="display: none;"></div>
+    </div>
+
+    <div class="meal-section">
+    <div class="meal-header">
+    <span class="meal-title">🌅 Завтрак</span>
+    <span class="meal-calories" id="breakfast-calories">0 ккал</span>
+    </div>
+    <div id="breakfast-items">
+    <div class="empty-meal">Нажмите ➕ чтобы добавить</div>
+    </div>
+    </div>
+
+    <div class="meal-section">
+    <div class="meal-header">
+    <span class="meal-title">☀️ Обед</span>
+    <span class="meal-calories" id="lunch-calories">0 ккал</span>
+    </div>
+    <div id="lunch-items">
+    <div class="empty-meal">Нажмите ➕ чтобы добавить</div>
+    </div>
+    </div>
+
+    <div class="meal-section">
+    <div class="meal-header">
+    <span class="meal-title">🌙 Ужин</span>
+    <span class="meal-calories" id="dinner-calories">0 ккал</span>
+    </div>
+    <div id="dinner-items">
+    <div class="empty-meal">Нажмите ➕ чтобы добавить</div>
+    </div>
+    </div>
+
+    <div class="meal-section">
+    <div class="meal-header">
+    <span class="meal-title">🍎 Перекусы</span>
+    <span class="meal-calories" id="snacks-calories">0 ккал</span>
+    </div>
+    <div id="snacks-items">
+    <div class="empty-meal">Нажмите ➕ чтобы добавить</div>
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Вкладка статистики -->
+    <div id="stats-tab" class="tab-content">
+    <div class="container">
+    <h3 style="margin-bottom: 15px;">Статистика за неделю</h3>
+    
+    <div class="stats-grid">
+    <div class="stat-card">
+    <div class="stat-title">Средние калории</div>
+    <div class="stat-value" id="avg-calories">0</div>
+    </div>
+    <div class="stat-card">
+    <div class="stat-title">Дней записано</div>
+    <div class="stat-value" id="days-tracked">0</div>
+    </div>
+    <div class="stat-card">
+    <div class="stat-title">Средний белок</div>
+    <div class="stat-value" id="avg-protein">0г</div>
+    </div>
+    <div class="stat-card">
+    <div class="stat-title">Цель достигнута</div>
+    <div class="stat-value" id="goal-days">0</div>
+    </div>
+    </div>
+
+    <h3 style="margin-bottom: 15px;">Топ продуктов</h3>
+    <div id="top-foods"></div>
+    </div>
+    </div>
+
+    <!-- Вкладка продуктов -->
+    <div id="products-tab" class="tab-content">
+    <div class="container">
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <input type="text" id="product-search" placeholder="Поиск продукта" 
+    style="flex: 1; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px;">
+    </div>
+    <div id="products-list"></div>
+    </div>
+    </div>
+
+    <!-- Вкладка настроек -->
+    <div id="settings-tab" class="tab-content">
+    <div class="container">
+    <div class="meal-section">
+    <h3 style="margin-bottom: 15px;">Дневные цели</h3>
+    
+    <div style="margin-bottom: 15px;">
+    <label style="display: block; margin-bottom: 5px; color: #666;">Калории</label>
+    <input type="number" id="target-calories-input" value="2000" 
+    style="width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px;">
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+    <label style="display: block; margin-bottom: 5px; color: #666;">Белки (г)</label>
+    <input type="number" id="target-protein-input" value="150" 
+    style="width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px;">
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+    <label style="display: block; margin-bottom: 5px; color: #666;">Жиры (г)</label>
+    <input type="number" id="target-fats-input" value="70" 
+    style="width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px;">
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+    <label style="display: block; margin-bottom: 5px; color: #666;">Углеводы (г)</label>
+    <input type="number" id="target-carbs-input" value="250" 
+    style="width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px;">
+    </div>
+    
+    <button class="add-btn" style="width: 100%; background: #48c774; color: white;" 
+    onclick="saveSettings()">Сохранить</button>
+    </div>
+    </div>
+    </div>
+
+    <!-- Нижняя панель навигации -->
+    <div class="bottom-bar">
+    <button class="tab-btn active" onclick="showTab('diary')">
+    <span class="tab-btn-icon">📖</span>
+    <span>Дневник</span>
+    </button>
+    <button class="tab-btn" onclick="showTab('stats')">
+    <span class="tab-btn-icon">📊</span>
+    <span>Статистика</span>
+    </button>
+    <button class="tab-btn" onclick="showTab('products')">
+    <span class="tab-btn-icon">🥗</span>
+    <span>Продукты</span>
+    </button>
+    <button class="tab-btn" onclick="showTab('settings')">
+    <span class="tab-btn-icon">⚙️</span>
+    <span>Настройки</span>
+    </button>
+    </div>
+
+    <script>
+    // Инициализация Telegram Web App
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // База продуктов (расширенная)
+    const foodDatabase = {
+    // Завтраки
+    'овсянка': { calories: 380, protein: 13, fats: 7, carbs: 67, per: 100 },
+    'овсяная каша': { calories: 380, protein: 13, fats: 7, carbs: 67, per: 100 },
+    'гречка': { calories: 343, protein: 13, fats: 3, carbs: 72, per: 100 },
+    'гречневая каша': { calories: 132, protein: 4.5, fats: 2.3, carbs: 25, per: 100 },
+    'яйцо': { calories: 155, protein: 13, fats: 11, carbs: 1, per: 100 },
+    'яичница': { calories: 240, protein: 14, fats: 20, carbs: 2, per: 100 },
+    'омлет': { calories: 184, protein: 10, fats: 15, carbs: 2, per: 100 },
+    'творог': { calories: 121, protein: 17, fats: 5, carbs: 3, per: 100 },
+    'сырники': { calories: 220, protein: 12, fats: 8, carbs: 25, per: 100 },
+    'блины': { calories: 230, protein: 6, fats: 8, carbs: 34, per: 100 },
+    'блин': { calories: 230, protein: 6, fats: 8, carbs: 34, per: 100 },
+    'тост': { calories: 313, protein: 9, fats: 4, carbs: 59, per: 100 },
+    'круассан': { calories: 406, protein: 8, fats: 21, carbs: 46, per: 100 },
+    
+    // Добавки к блинам и завтракам
+    'ветчина': { calories: 145, protein: 19, fats: 7, carbs: 1, per: 100 },
+    'сыр': { calories: 364, protein: 24, fats: 29, carbs: 0.5, per: 100 },
+    'джем': { calories: 250, protein: 0.3, fats: 0.1, carbs: 65, per: 100 },
+    'варенье': { calories: 250, protein: 0.3, fats: 0.1, carbs: 65, per: 100 },
+    'мед': { calories: 304, protein: 0.3, fats: 0, carbs: 82, per: 100 },
+    'масло арахисовое': { calories: 588, protein: 22, fats: 50, carbs: 20, per: 100 },
+    
+    // Фрукты
+    'банан': { calories: 89, protein: 1.1, fats: 0.3, carbs: 23, per: 100 },
+    'яблоко': { calories: 52, protein: 0.3, fats: 0.2, carbs: 14, per: 100 },
+    'апельсин': { calories: 47, protein: 0.9, fats: 0.1, carbs: 12, per: 100 },
+    'груша': { calories: 57, protein: 0.4, fats: 0.1, carbs: 15, per: 100 },
+    'виноград': { calories: 67, protein: 0.6, fats: 0.2, carbs: 17, per: 100 },
+    'клубника': { calories: 32, protein: 0.7, fats: 0.3, carbs: 8, per: 100 },
+    'малина': { calories: 52, protein: 1.2, fats: 0.7, carbs: 12, per: 100 },
+    'киви': { calories: 61, protein: 1.1, fats: 0.5, carbs: 15, per: 100 },
+    'ананас': { calories: 50, protein: 0.5, fats: 0.1, carbs: 13, per: 100 },
+    'манго': { calories: 60, protein: 0.8, fats: 0.4, carbs: 15, per: 100 },
+    'авокадо': { calories: 160, protein: 2, fats: 15, carbs: 9, per: 100 },
+    
+    // Овощи
+    'помидор': { calories: 18, protein: 0.9, fats: 0.2, carbs: 3.9, per: 100 },
+    'огурец': { calories: 16, protein: 0.7, fats: 0.1, carbs: 3.6, per: 100 },
+    'капуста': { calories: 25, protein: 1.3, fats: 0.1, carbs: 6, per: 100 },
+    'морковь': { calories: 41, protein: 0.9, fats: 0.2, carbs: 10, per: 100 },
+    'картофель': { calories: 77, protein: 2, fats: 0.1, carbs: 17, per: 100 },
+    'картошка': { calories: 77, protein: 2, fats: 0.1, carbs: 17, per: 100 },
+    'свекла': { calories: 43, protein: 1.6, fats: 0.2, carbs: 10, per: 100 },
+    'лук': { calories: 40, protein: 1.1, fats: 0.1, carbs: 9, per: 100 },
+    'брокколи': { calories: 34, protein: 2.8, fats: 0.4, carbs: 7, per: 100 },
+    'шпинат': { calories: 23, protein: 2.9, fats: 0.4, carbs: 3.6, per: 100 },
+    'болгарский перец': { calories: 27, protein: 1, fats: 0.2, carbs: 6, per: 100 },
+    'баклажан': { calories: 25, protein: 1, fats: 0.2, carbs: 6, per: 100 },
+    
+    // Мясо
+    'курица': { calories: 165, protein: 31, fats: 3.6, carbs: 0, per: 100 },
+    'куриная грудка': { calories: 165, protein: 31, fats: 3.6, carbs: 0, per: 100 },
+    'говядина': { calories: 250, protein: 26, fats: 15, carbs: 0, per: 100 },
+    'свинина': { calories: 242, protein: 27, fats: 14, carbs: 0, per: 100 },
+    'индейка': { calories: 189, protein: 29, fats: 7, carbs: 0, per: 100 },
+    'котлета': { calories: 260, protein: 16, fats: 20, carbs: 5, per: 100 },
+    'сосиска': { calories: 266, protein: 10, fats: 24, carbs: 2, per: 100 },
+    'колбаса': { calories: 301, protein: 12, fats: 28, carbs: 0, per: 100 },
+    'баранина': { calories: 294, protein: 25, fats: 21, carbs: 0, per: 100 },
+    'утка': { calories: 337, protein: 19, fats: 28, carbs: 0, per: 100 },
+    
+    // Рыба
+    'лосось': { calories: 208, protein: 20, fats: 13, carbs: 0, per: 100 },
+    'тунец': { calories: 144, protein: 23, fats: 5, carbs: 0, per: 100 },
+    'треска': { calories: 82, protein: 18, fats: 0.7, carbs: 0, per: 100 },
+    'скумбрия': { calories: 205, protein: 19, fats: 14, carbs: 0, per: 100 },
+    'селедка': { calories: 217, protein: 18, fats: 16, carbs: 0, per: 100 },
+    'форель': { calories: 148, protein: 21, fats: 6.6, carbs: 0, per: 100 },
+    'минтай': { calories: 72, protein: 16, fats: 0.9, carbs: 0, per: 100 },
+    
+    // Гарниры
+    'рис': { calories: 130, protein: 2.7, fats: 0.3, carbs: 28, per: 100 },
+    'макароны': { calories: 131, protein: 5, fats: 1.1, carbs: 25, per: 100 },
+    'паста': { calories: 131, protein: 5, fats: 1.1, carbs: 25, per: 100 },
+    'пюре': { calories: 88, protein: 2, fats: 3.3, carbs: 14, per: 100 },
+    'киноа': { calories: 120, protein: 4.1, fats: 1.9, carbs: 21, per: 100 },
+    'кускус': { calories: 112, protein: 3.8, fats: 0.2, carbs: 23, per: 100 },
+    
+    // Супы
+    'борщ': { calories: 49, protein: 1.4, fats: 2.2, carbs: 6.7, per: 100 },
+    'суп': { calories: 40, protein: 1.5, fats: 1.5, carbs: 5, per: 100 },
+    'щи': { calories: 31, protein: 1.6, fats: 1.1, carbs: 3.8, per: 100 },
+    'солянка': { calories: 69, protein: 5.2, fats: 4.6, carbs: 1.7, per: 100 },
+    'окрошка': { calories: 47, protein: 2.1, fats: 1.9, carbs: 5.5, per: 100 },
+    'мисо суп': { calories: 35, protein: 2.5, fats: 1, carbs: 4, per: 100 },
+    
+    // Молочные
+    'молоко': { calories: 64, protein: 3.2, fats: 3.6, carbs: 4.8, per: 100 },
+    'кефир': { calories: 59, protein: 3, fats: 3.2, carbs: 4.1, per: 100 },
+    'йогурт': { calories: 68, protein: 5, fats: 1.5, carbs: 8, per: 100 },
+    'ряженка': { calories: 67, protein: 2.9, fats: 4, carbs: 4.2, per: 100 },
+    'сметана': { calories: 206, protein: 2.5, fats: 20, carbs: 3.4, per: 100 },
+    'масло': { calories: 748, protein: 0.5, fats: 82.5, carbs: 0.8, per: 100 },
+    'сливочное масло': { calories: 748, protein: 0.5, fats: 82.5, carbs: 0.8, per: 100 },
+    'творожный сыр': { calories: 98, protein: 11, fats: 5, carbs: 3, per: 100 },
+    
+    // Хлеб и выпечка
+    'хлеб': { calories: 265, protein: 9, fats: 3.2, carbs: 49, per: 100 },
+    'хлеб черный': { calories: 201, protein: 6.6, fats: 1.2, carbs: 40, per: 100 },
+    'хлеб белый': { calories: 265, protein: 9, fats: 3.2, carbs: 49, per: 100 },
+    'булочка': { calories: 339, protein: 7.9, fats: 9.4, carbs: 55, per: 100 },
+    'печенье': { calories: 417, protein: 7, fats: 10, carbs: 74, per: 100 },
+    'кекс': { calories: 379, protein: 5, fats: 17, carbs: 53, per: 100 },
+    
+    // Напитки
+    'кофе': { calories: 2, protein: 0.2, fats: 0, carbs: 0.3, per: 100 },
+    'чай': { calories: 1, protein: 0.1, fats: 0, carbs: 0.3, per: 100 },
+    'сок': { calories: 45, protein: 0.5, fats: 0.1, carbs: 11, per: 100 },
+    'компот': { calories: 60, protein: 0.2, fats: 0, carbs: 14.5, per: 100 },
+    'вода': { calories: 0, protein: 0, fats: 0, carbs: 0, per: 100 },
+    'энергетик': { calories: 45, protein: 0, fats: 0, carbs: 11, per: 100 },
+    
+    // Орехи и семечки
+    'орехи': { calories: 600, protein: 20, fats: 50, carbs: 20, per: 100 },
+    'миндаль': { calories: 579, protein: 21, fats: 49, carbs: 22, per: 100 },
+    'грецкий орех': { calories: 654, protein: 15, fats: 65, carbs: 14, per: 100 },
+    'арахис': { calories: 567, protein: 26, fats: 49, carbs: 16, per: 100 },
+    'семечки': { calories: 584, protein: 21, fats: 51, carbs: 20, per: 100 },
+    'фисташки': { calories: 562, protein: 20, fats: 45, carbs: 28, per: 100 },
+    'кешью': { calories: 553, protein: 18, fats: 44, carbs: 30, per: 100 },
+    
+    // Салаты
+    'салат': { calories: 16, protein: 1.2, fats: 0.2, carbs: 2.9, per: 100 },
+    'оливье': { calories: 198, protein: 5.5, fats: 15.5, carbs: 8, per: 100 },
+    'винегрет': { calories: 130, protein: 1.7, fats: 10.3, carbs: 8.2, per: 100 },
+    'цезарь': { calories: 184, protein: 9, fats: 14, carbs: 7, per: 100 },
+    
+    // Десерты и сладости
+    'шоколад': { calories: 546, protein: 5.4, fats: 35, carbs: 52, per: 100 },
+    'мороженое': { calories: 207, protein: 3.5, fats: 11, carbs: 24, per: 100 },
+    'торт': { calories: 397, protein: 4, fats: 20, carbs: 50, per: 100 },
+    
+    // Другие
+    'тофу': { calories: 76, protein: 8, fats: 4.8, carbs: 1.9, per: 100 },
+    'чиа': { calories: 486, protein: 17, fats: 31, carbs: 42, per: 100 },
+    'гранола': { calories: 471, protein: 10, fats: 20, carbs: 64, per: 100 }
+    };
+
+    let currentDate = new Date();
+    let currentMeal = 'breakfast';
+    let dailyData = {};
+    let settings = {
+    targetCalories: 2000,
+    targetProtein: 150,
+    targetFats: 70,
+    targetCarbs: 250
+    };
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', function() {
+    loadSettings();
+    loadDailyData();
+    updateDateDisplay();
+    updateDailySummary();
+    });
+
+    function showTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.classList.remove('active');
+    });
+    document.getElementById(tabName + '-tab').classList.add('active');
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+    
+    if (tabName === 'stats') {
+    updateStats();
+    } else if (tabName === 'products') {
+    updateProductsList();
+    }
+    
+    if (tg.HapticFeedback) {
+    tg.HapticFeedback.impactOccurred('light');
+    }
+    }
+
+    function changeDate(direction) {
+    currentDate.setDate(currentDate.getDate() + direction);
+    updateDateDisplay();
+    loadDailyData();
+    updateDailySummary();
+    
+    if (tg.HapticFeedback) {
+    tg.HapticFeedback.impactOccurred('light');
+    }
+    }
+
+    function updateDateDisplay() {
+    const today = new Date();
+    const isToday = currentDate.toDateString() === today.toDateString();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = currentDate.toDateString() === yesterday.toDateString();
+    
+    let dateText;
+    if (isToday) {
+    dateText = 'Сегодня';
+    } else if (isYesterday) {
+    dateText = 'Вчера';
+    } else {
+    dateText = currentDate.toLocaleDateString('ru-RU', { 
+    day: 'numeric', 
+    month: 'long' 
+    });
+    }
+    
+    document.getElementById('current-date').textContent = dateText;
+    }
+
+    function analyzeFood() {
+    const input = document.getElementById('food-input');
+    const text = input.value.toLowerCase().trim();
+    
+    if (!text) return;
+    
+    // Определяем время приема пищи из текста или по времени
+    if (text.includes('на завтрак') || text.includes('завтрак')) {
+    currentMeal = 'breakfast';
+    } else if (text.includes('на обед') || text.includes('обед')) {
+    currentMeal = 'lunch';
+    } else if (text.includes('на ужин') || text.includes('ужин')) {
+    currentMeal = 'dinner';
+    } else if (text.includes('перекус') || text.includes('на перекус')) {
+    currentMeal = 'snacks';
+    } else {
+    // Определяем по текущему времени
+    const hour = new Date().getHours();
+    if (hour < 11) currentMeal = 'breakfast';
+    else if (hour < 15) currentMeal = 'lunch';
+    else if (hour < 20) currentMeal = 'dinner';
+    else currentMeal = 'snacks';
+    }
+    
+    // Парсим текст
+    const foodItems = parseFood(text);
+    
+    if (foodItems.length > 0) {
+    // Показываем результаты
+    showSearchResults(foodItems);
+    } else {
+    tg.showAlert('Не удалось распознать продукты. Попробуйте ввести по-другому.');
+    }
+    
+    if (tg.HapticFeedback) {
+    tg.HapticFeedback.impactOccurred('light');
+    }
+    }
+
+    function parseFood(text) {
+    const results = [];
+    
+    // Убираем фразы о времени приема пищи
+    let cleanText = text.replace(/на (завтрак|обед|ужин|перекус)/gi, '').trim();
+    
+    // Обрабатываем сложные блюда
+    const complexPatterns = [
+    { pattern: /(\d+)\s*блин[а-я]*\s*с\s*([а-яё\s]+)/i, handler: parsePancakes },
+    { pattern: /(\d+)\s*яй[а-яц]+/i, handler: parseEggs },
+    { pattern: /тарелк[а-я]*\s+([а-яё]+)/i, handler: parsePlate }
+    ];
+    
+    // Проверяем сложные паттерны
+    for (let {pattern, handler} of complexPatterns) {
+    const match = cleanText.match(pattern);
+    if (match) {
+    const items = handler(match, cleanText);
+    if (items.length > 0) {
+    results.push(...items);
+    // Удаляем обработанную часть из текста
+    cleanText = cleanText.replace(pattern, '').trim();
+    }
+    }
+    }
+    
+    // Ищем продукты в базе
+    const foundProducts = new Set();
+    for (let food in foodDatabase) {
+    if (cleanText.includes(food) && !foundProducts.has(food)) {
+    const data = foodDatabase[food];
+    let amount = 100; // По умолчанию 100г
+    
+    // Ищем количество перед продуктом
+    const quantityPattern = new RegExp(`(\\d+)\\s*(г|гр|грамм|мл|ml|шт|штук|порц)?\\s*${food}`, 'i');
+    const quantityMatch = cleanText.match(quantityPattern);
+    
+    if (quantityMatch) {
+    amount = parseInt(quantityMatch[1]);
+    const unit = quantityMatch[2];
+    
+    // Корректируем для штучных продуктов
+    if (food === 'яйцо' && (!unit || unit.includes('шт'))) {
+    amount = amount * 50; // одно яйцо ~50г
+    } else if (food === 'блин' && (!unit || unit.includes('шт'))) {
+    amount = amount * 60; // один блин ~60г
+    } else if (food === 'котлета' && (!unit || unit.includes('шт'))) {
+    amount = amount * 100; // одна котлета ~100г
+    }
+    } else {
+    // Проверяем общие указания количества
+    const generalAmount = cleanText.match(/(\d+)\s*(г|гр|грамм|мл|ml)/i);
+    if (generalAmount && !cleanText.match(/\d+\s*(г|гр|грамм|мл|ml)\s+\w+/i)) {
+    amount = parseInt(generalAmount[1]);
+    } else if (cleanText.includes('тарелк') || cleanText.includes('порц')) {
+    amount = 250; // Стандартная порция
+    } else if (cleanText.includes('чашк') || cleanText.includes('стакан')) {
+    amount = 200;
+    } else if (cleanText.includes('ложк')) {
+    amount = 20;
+    } else {
+    // Специальные случаи для конкретных продуктов
+    if (food === 'яйцо') amount = 50;
+    else if (food === 'банан') amount = 120;
+    else if (food === 'яблоко') amount = 150;
+    else if (food === 'апельсин') amount = 180;
+    else if (food === 'хлеб') amount = 30; // кусочек хлеба
+    else if (food === 'сыр') amount = 20; // ломтик сыра
+    }
+    }
+    
+    const multiplier = amount / data.per;
+    results.push({
+    name: food.charAt(0).toUpperCase() + food.slice(1),
+    amount: amount,
+    calories: Math.round(data.calories * multiplier),
+    protein: Math.round(data.protein * multiplier * 10) / 10,
+    fats: Math.round(data.fats * multiplier * 10) / 10,
+    carbs: Math.round(data.carbs * multiplier * 10) / 10
+    });
+    
+    foundProducts.add(food);
+    }
+    }
+    
+    return results;
+    }
+    
+    // Функция для парсинга блинов с начинкой
+    function parsePancakes(match, text) {
+    const results = [];
+    const count = parseInt(match[1]);
+    const filling = match[2].toLowerCase();
+    
+    // Добавляем блины
+    if (foodDatabase['блин']) {
+    const data = foodDatabase['блин'];
+    const amount = count * 60; // один блин ~60г
+    const multiplier = amount / data.per;
+    results.push({
+    name: `Блины (${count} шт)`,
+    amount: amount,
+    calories: Math.round(data.calories * multiplier),
+    protein: Math.round(data.protein * multiplier * 10) / 10,
+    fats: Math.round(data.fats * multiplier * 10) / 10,
+    carbs: Math.round(data.carbs * multiplier * 10) / 10
+    });
+    }
+    
+    // Добавляем начинку
+    const fillings = filling.split(/\s+и\s+/);
+    fillings.forEach(f => {
+    const trimmed = f.trim();
+    if (foodDatabase[trimmed]) {
+    const data = foodDatabase[trimmed];
+    const amount = count * 20; // ~20г начинки на блин
+    const multiplier = amount / data.per;
+    results.push({
+    name: trimmed.charAt(0).toUpperCase() + trimmed.slice(1) + ' (начинка)',
+    amount: amount,
+    calories: Math.round(data.calories * multiplier),
+    protein: Math.round(data.protein * multiplier * 10) / 10,
+    fats: Math.round(data.fats * multiplier * 10) / 10,
+    carbs: Math.round(data.carbs * multiplier * 10) / 10
+    });
+    }
+    });
+    
+    return results;
+    }
+    
+    // Функция для парсинга яиц
+    function parseEggs(match, text) {
+    const results = [];
+    const count = parseInt(match[1]);
+    
+    if (foodDatabase['яйцо']) {
+    const data = foodDatabase['яйцо'];
+    const amount = count * 50; // одно яйцо ~50г
+    const multiplier = amount / data.per;
+    results.push({
+    name: `Яйца (${count} шт)`,
+    amount: amount,
+    calories: Math.round(data.calories * multiplier),
+    protein: Math.round(data.protein * multiplier * 10) / 10,
+    fats: Math.round(data.fats * multiplier * 10) / 10,
+    carbs: Math.round(data.carbs * multiplier * 10) / 10
+    });
+    }
+    
+    return results;
+    }
+    
+    // Функция для парсинга тарелки чего-либо
+    function parsePlate(match, text) {
+    const results = [];
+    const food = match[1].toLowerCase();
+    
+    
+    if (foodDatabase[food]) {
+    const data = foodDatabase[food];
+    const amount = 250; // стандартная тарелка
+    const multiplier = amount / data.per;
+    results.push({
+    name: `${food.charAt(0).toUpperCase() + food.slice(1)} (тарелка)`,
+    amount: amount,
+    calories: Math.round(data.calories * multiplier),
+    protein: Math.round(data.protein * multiplier * 10) / 10,
+    fats: Math.round(data.fats * multiplier * 10) / 10,
+    carbs: Math.round(data.carbs * multiplier * 10) / 10
+    });
+    }
+    
+    return results;
+    }
+
+    function showSearchResults(items) {
+    const resultsDiv = document.getElementById('search-results');
+    resultsDiv.innerHTML = '';
+    resultsDiv.style.display = 'block';
+
+    if (items.length === 1) {
+        addFoodItem(items[0]);
+        resultsDiv.style.display = 'none';
+        document.getElementById('food-input').value = '';
+        return;
+    }
+    
+    items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'search-item';
+    div.innerHTML = `
+    <div class="search-item-name">${item.name} (${item.amount}г)</div>
+    <div class="search-item-info">
+    ${item.calories} ккал | Б: ${item.protein}г | Ж: ${item.fats}г | У: ${item.carbs}г
+    </div>
+    `;
+    div.onclick = () => addFoodItem(item);
+    resultsDiv.appendChild(div);
+    });
+    
+    // Добавляем кнопку "Добавить все"
+    if (items.length > 1) {
+    const addAllDiv = document.createElement('div');
+    addAllDiv.className = 'search-item';
+    addAllDiv.style.background = '#48c774';
+    addAllDiv.style.color = 'white';
+    addAllDiv.innerHTML = `
+    <div class="search-item-name">Добавить все (${items.length} продуктов)</div>
+    <div class="search-item-info">
+    Всего: ${items.reduce((sum, i) => sum + i.calories, 0)} ккал
+    </div>
+    `;
+    addAllDiv.onclick = () => {
+    items.forEach(item => addFoodItem(item, false));
+    updateDailySummary();
+    document.getElementById('food-input').value = '';
+    resultsDiv.style.display = 'none';
+    tg.showPopup({
+    title: 'Добавлено!',
+    message: `Добавлено ${items.length} продуктов`,
+    buttons: [{type: 'ok'}]
+    });
+    };
+    resultsDiv.appendChild(addAllDiv);
+    }
+    }
+
+    function addFoodItem(item, showAlert = true) {
+    const dateKey = currentDate.toISOString().split('T')[0];
+    
+    if (!dailyData[dateKey]) {
+    dailyData[dateKey] = {
+    breakfast: [],
+    lunch: [],
+    dinner: [],
+    snacks: []
+    };
+    }
+    
+    dailyData[dateKey][currentMeal].push(item);
+    saveDailyData();
+    updateMealDisplay(currentMeal);
+    updateDailySummary();
+    
+    document.getElementById('food-input').value = '';
+    document.getElementById('search-results').style.display = 'none';
+    
+    if (showAlert) {
+    tg.showPopup({
+    title: 'Добавлено!',
+    message: `${item.name} (${item.calories} ккал)`,
+    buttons: [{type: 'ok'}]
+    });
+    }
+    
+    if (tg.HapticFeedback) {
+    tg.HapticFeedback.notificationOccurred('success');
+    }
+    }
+
+    function updateMealDisplay(meal) {
+    const dateKey = currentDate.toISOString().split('T')[0];
+    const mealData = dailyData[dateKey]?.[meal] || [];
+    const container = document.getElementById(`${meal}-items`);
+    
+    if (mealData.length === 0) {
+    container.innerHTML = '<div class="empty-meal">Нажмите ➕ чтобы добавить</div>';
+    } else {
+    container.innerHTML = mealData.map((item, index) => `
+    <div class="food-item">
+    <div class="food-info">
+    <div class="food-name">${item.name}</div>
+    <div class="food-details">${item.amount}г | Б: ${item.protein}г | Ж: ${item.fats}г | У: ${item.carbs}г</div>
+    </div>
+    <span class="food-calories">${item.calories} ккал</span>
+    <button class="delete-btn" onclick="deleteFoodItem('${meal}', ${index})">✕</button>
+    </div>
+    `).join('');
+    }
+    
+    // Обновляем калории приема пищи
+    const totalCalories = mealData.reduce((sum, item) => sum + item.calories, 0);
+    document.getElementById(`${meal}-calories`).textContent = `${totalCalories} ккал`;
+    }
+
+    function deleteFoodItem(meal, index) {
+    const dateKey = currentDate.toISOString().split('T')[0];
+    dailyData[dateKey][meal].splice(index, 1);
+    saveDailyData();
+    updateMealDisplay(meal);
+    updateDailySummary();
+    
+    if (tg.HapticFeedback) {
+    tg.HapticFeedback.impactOccurred('warning');
+    }
+    }
+
+    function updateDailySummary() {
+    const dateKey = currentDate.toISOString().split('T')[0];
+    const dayData = dailyData[dateKey] || { breakfast: [], lunch: [], dinner: [], snacks: [] };
+    
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalFats = 0;
+    let totalCarbs = 0;
+    
+    ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
+    updateMealDisplay(meal);
+    dayData[meal].forEach(item => {
+    totalCalories += item.calories;
+    totalProtein += item.protein;
+    totalFats += item.fats;
+    totalCarbs += item.carbs;
+    });
+    });
+    
+    // Обновляем отображение
+    document.getElementById('total-calories').textContent = totalCalories;
+    document.getElementById('total-protein').textContent = Math.round(totalProtein) + 'г';
+    document.getElementById('total-fats').textContent = Math.round(totalFats) + 'г';
+    document.getElementById('total-carbs').textContent = Math.round(totalCarbs) + 'г';
+    
+    // Обновляем прогресс-кольцо
+    const progress = Math.min(totalCalories / settings.targetCalories, 1);
+    const circumference = 2 * Math.PI * 50;
+    const offset = circumference - (progress * circumference);
+    document.getElementById('calories-progress').style.strokeDashoffset = offset;
+    
+    // Цвет в зависимости от прогресса
+    const progressCircle = document.getElementById('calories-progress');
+    if (progress > 1.1) {
+    progressCircle.style.stroke = '#ff6b6b';
+    } else if (progress > 0.9) {
+    progressCircle.style.stroke = '#ffd93d';
+    } else {
+    progressCircle.style.stroke = '#48c774';
+    }
+    }
+
+    function updateStats() {
+    const last7Days = [];
+    for (let i = 0; i < 7; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateKey = date.toISOString().split('T')[0];
+    if (dailyData[dateKey]) {
+    last7Days.push(dailyData[dateKey]);
+    }
+    }
+    
+    if (last7Days.length === 0) {
+    document.getElementById('avg-calories').textContent = '0';
+    document.getElementById('days-tracked').textContent = '0';
+    document.getElementById('avg-protein').textContent = '0г';
+    document.getElementById('goal-days').textContent = '0';
+    return;
+    }
+    
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let goalDays = 0;
+    const foodCount = {};
+    
+    last7Days.forEach(day => {
+    let dayCalories = 0;
+    let dayProtein = 0;
+    
+    ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
+    day[meal].forEach(item => {
+    dayCalories += item.calories;
+    dayProtein += item.protein;
+    foodCount[item.name] = (foodCount[item.name] || 0) + 1;
+    });
+    });
+    
+    totalCalories += dayCalories;
+    totalProtein += dayProtein;
+    
+    if (dayCalories >= settings.targetCalories * 0.9 && 
+    dayCalories <= settings.targetCalories * 1.1) {
+    goalDays++;
+    }
+    });
+    
+    document.getElementById('avg-calories').textContent = Math.round(totalCalories / last7Days.length);
+    document.getElementById('days-tracked').textContent = last7Days.length;
+    document.getElementById('avg-protein').textContent = Math.round(totalProtein / last7Days.length) + 'г';
+    document.getElementById('goal-days').textContent = goalDays;
+    
+    // Топ продуктов
+    const topFoods = Object.entries(foodCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+    
+    const topFoodsHtml = topFoods.map(([name, count]) => `
+    <div class="food-item">
+    <span>${name}</span>
+    <span>${count} раз</span>
+    </div>
+    `).join('');
+    
+    document.getElementById('top-foods').innerHTML = topFoodsHtml || '<div class="empty-meal">Нет данных</div>';
+    }
+
+    function updateProductsList() {
+    const searchInput = document.getElementById('product-search');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const productsList = document.getElementById('products-list');
+    
+    productsList.innerHTML = '';
+    
+    for (let food in foodDatabase) {
+    if (!searchTerm || food.includes(searchTerm)) {
+    const data = foodDatabase[food];
+    const div = document.createElement('div');
+    div.className = 'food-item';
+    div.innerHTML = `
+    <div class="food-info">
+    <div class="food-name">${food}</div>
+    <div class="food-details">на 100г: ${data.calories} ккал | Б: ${data.protein}г | Ж: ${data.fats}г | У: ${data.carbs}г</div>
+    </div>
+    `;
+    productsList.appendChild(div);
+    }
+    }
+    }
+
+    function saveSettings() {
+    settings.targetCalories = parseInt(document.getElementById('target-calories-input').value) || 2000;
+    settings.targetProtein = parseInt(document.getElementById('target-protein-input').value) || 150;
+    settings.targetFats = parseInt(document.getElementById('target-fats-input').value) || 70;
+    settings.targetCarbs = parseInt(document.getElementById('target-carbs-input').value) || 250;
+    
+    tg.CloudStorage.setItem('food_settings', JSON.stringify(settings));
+    
+    document.getElementById('target-calories').textContent = settings.targetCalories;
+    updateDailySummary();
+    
+    tg.showPopup({
+    title: 'Сохранено!',
+    message: 'Настройки обновлены',
+    buttons: [{type: 'ok'}]
+    });
+    }
+
+    function loadSettings() {
+    tg.CloudStorage.getItem('food_settings', (error, value) => {
+    if (value) {
+    try {
+    settings = JSON.parse(value);
+// Живой поиск при вводе в поле быстрого добавления
+document.getElementById('food-input')?.addEventListener('input', analyzeFood);
+    document.getElementById('target-calories').textContent = settings.targetCalories;
+    document.getElementById('target-calories-input').value = settings.targetCalories;
+    document.getElementById('target-protein-input').value = settings.targetProtein;
+    document.getElementById('target-fats-input').value = settings.targetFats;
+    document.getElementById('target-carbs-input').value = settings.targetCarbs;
+    } catch (e) {
+    console.error('Error loading settings:', e);
+    }
+    }
+    });
+    }
+
+    function saveDailyData() {
+    const dateKey = currentDate.toISOString().split('T')[0];
+    tg.CloudStorage.setItem(`food_${dateKey}`, JSON.stringify(dailyData[dateKey]), (error) => {
+    if (error) {
+        console.error('Error saving data:', error);
+        tg.showAlert('Ошибка сохранения данных. Попробуйте снова.');
+    }
+});
+    }
+
+    function loadDailyData() {
+    const dateKey = currentDate.toISOString().split('T')[0];
+    tg.CloudStorage.getItem(`food_${dateKey}`, (error, value) => {
+    if (value) {
+    try {
+    dailyData[dateKey] = JSON.parse(value);
+    } catch (e) {
+    console.error('Error loading daily data:', e);
+    dailyData[dateKey] = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+    }
+    } else {
+    dailyData[dateKey] = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+    }
+    updateDailySummary();
+    });
+    }
+
+    // Поиск продуктов при вводе
+    document.getElementById('product-search')?.addEventListener('input', updateProductsList);
+    </script>
+</body>
+</html>
