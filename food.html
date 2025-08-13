@@ -424,6 +424,14 @@
     placeholder="Например: овсянка с бананом">
     <button class="add-btn" onclick="analyzeFood()">➕</button>
     </div>
+
+<select id="meal-select" class="food-input" style="flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 16px; background: white;">
+    <option value="breakfast">🌅 Завтрак</option>
+    <option value="lunch" selected>☀️ Обед</option>
+    <option value="dinner">🌙 Ужин</option>
+    <option value="snacks">🍎 Перекусы</option>
+</select>
+
     <div id="search-results" class="search-results" style="display: none;"></div>
     </div>
 
@@ -791,23 +799,7 @@
     
     if (!text) return;
     
-    // Определяем время приема пищи из текста или по времени
-    if (text.includes('на завтрак') || text.includes('завтрак')) {
-    currentMeal = 'breakfast';
-    } else if (text.includes('на обед') || text.includes('обед')) {
-    currentMeal = 'lunch';
-    } else if (text.includes('на ужин') || text.includes('ужин')) {
-    currentMeal = 'dinner';
-    } else if (text.includes('перекус') || text.includes('на перекус')) {
-    currentMeal = 'snacks';
-    } else {
-    // Определяем по текущему времени
-    const hour = new Date().getHours();
-    if (hour < 11) currentMeal = 'breakfast';
-    else if (hour < 15) currentMeal = 'lunch';
-    else if (hour < 20) currentMeal = 'dinner';
-    else currentMeal = 'snacks';
-    }
+    currentMeal = document.getElementById('meal-select').value;
     
     // Парсим текст
     const foodItems = parseFood(text);
@@ -1097,7 +1089,10 @@
     <div class="food-item">
     <div class="food-info">
     <div class="food-name">${item.name}</div>
-    <div class="food-details">${item.amount}г | Б: ${item.protein}г | Ж: ${item.fats}г | У: ${item.carbs}г</div>
+    <div class="food-details">
+        <input type="number" value="${item.amount}" style="width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 5px;" onchange="updateAmount('${meal}', ${index}, this.value)">
+        г | Б: ${item.protein}г | Ж: ${item.fats}г | У: ${item.carbs}г
+    </div>
     </div>
     <span class="food-calories">${item.calories} ккал</span>
     <button class="delete-btn" onclick="deleteFoodItem('${meal}', ${index})">✕</button>
@@ -1126,6 +1121,31 @@
     const dateKey = currentDate.toISOString().split('T')[0];
     const dayData = dailyData[dateKey] || { breakfast: [], lunch: [], dinner: [], snacks: [] };
     
+
+function updateAmount(meal, index, newValue) {
+    let newAmount = parseInt(newValue);
+    if (isNaN(newAmount) || newAmount <= 0) return;
+    
+    const dateKey = currentDate.toISOString().split('T')[0];
+    const item = dailyData[dateKey][meal][index];
+    
+    const ratio = newAmount / item.amount;
+    
+    item.amount = newAmount;
+    item.calories = Math.round(item.calories * ratio);
+    item.protein = Math.round(item.protein * ratio * 10) / 10;
+    item.fats = Math.round(item.fats * ratio * 10) / 10;
+    item.carbs = Math.round(item.carbs * ratio * 10) / 10;
+    
+    saveDailyData();
+    updateMealDisplay(meal);
+    updateDailySummary();
+    
+    if (tg.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred('light');
+    }
+}
+
     let totalCalories = 0;
     let totalProtein = 0;
     let totalFats = 0;
