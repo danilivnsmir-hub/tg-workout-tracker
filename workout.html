@@ -709,7 +709,22 @@
     container.appendChild(setBlock);
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
+    function removeSet(btn) {
+    const setBlock = btn.closest('.set-block');
+    if (!setBlock) return;
+    const setsContainer = setBlock.parentElement; // .sets-container
+    setBlock.remove();
 
+    // Перенумерация
+    setsContainer.querySelectorAll('.set-block .set-number').forEach((el, idx) => {
+    el.textContent = Подход ${idx + 1};
+    });
+
+// Обновить стату
+updateCurrentStats();
+
+if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+}
     function removeSuperset(id) {
     const superset = document.getElementById(`superset-${id}`);
     if (superset) {
