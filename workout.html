@@ -213,15 +213,21 @@
       right: 0;
       background: var(--tg-theme-bg-color, white);
       border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-      padding: 10px 15px;
+      padding: 8px 10px;
       display: flex;
-      gap: 10px;
+      gap: 8px;
       box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
+    .bottom-bar::-webkit-scrollbar { height: 6px; }
+    .bottom-bar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
+
     .tab-btn {
-      flex: 1;
-      padding: 8px;
+      flex: 1 0 20%;
+      min-width: 72px;
+      padding: 6px;
       background: transparent;
       border: none;
       color: var(--tg-theme-hint-color, #999);
@@ -229,7 +235,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
       cursor: pointer;
     }
 
@@ -238,7 +244,7 @@
     }
 
     .tab-btn-icon {
-      font-size: 20px;
+      font-size: 18px;
     }
 
     .tab-content {
@@ -319,7 +325,8 @@
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class="header" style="position: sticky; top: 0;">
+      <button class="header-back" onclick="goBack()" aria-label="Назад">←</button>
       <h1>💪 Workout Tracker</h1>
     </div>
 
@@ -394,6 +401,7 @@
         </div>
         <canvas id="progress-canvas" width="600" height="220"></canvas>
         <div id="progress-empty" class="empty-state" style="display:none;">Нет данных для выбранного упражнения</div>
+        <div id="progress-1rm" class="record-hint" style="text-align:center; margin-top:8px;"></div>
       </div>
     </div>
 
@@ -895,7 +903,7 @@
           </div>
         `).join('');
 
-        document.getElementById('top-exercises').innerHTML = topExercisesHtml || 
+        document.getElementById('top-exercises').innerHTML = topExercisesHtml ||
           '<div class="empty-state">Нет данных</div>';
 
         // Рекорды
