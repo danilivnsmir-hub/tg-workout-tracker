@@ -440,9 +440,7 @@
     <span class="meal-title">🌅 Завтрак</span>
     <span class="meal-calories" id="breakfast-calories">0 ккал</span>
     </div>
-    <div id="breakfast-items">
-    <div class="empty-meal">Нажмите ➕ чтобы добавить</div>
-    </div>
+    <div id="breakfast-items"></div>
     </div>
 
     <div class="meal-section">
@@ -450,9 +448,7 @@
     <span class="meal-title">☀️ Обед</span>
     <span class="meal-calories" id="lunch-calories">0 ккал</span>
     </div>
-    <div id="lunch-items">
-    <div class="empty-meal">Нажмите ➕ чтобы добавить</div>
-    </div>
+    <div id="lunch-items"></div>
     </div>
 
     <div class="meal-section">
@@ -460,9 +456,7 @@
     <span class="meal-title">🌙 Ужин</span>
     <span class="meal-calories" id="dinner-calories">0 ккал</span>
     </div>
-    <div id="dinner-items">
-    <div class="empty-meal">Нажмите ➕ чтобы добавить</div>
-    </div>
+    <div id="dinner-items"></div>
     </div>
 
     <div class="meal-section">
@@ -470,9 +464,7 @@
     <span class="meal-title">🍎 Перекусы</span>
     <span class="meal-calories" id="snacks-calories">0 ккал</span>
     </div>
-    <div id="snacks-items">
-    <div class="empty-meal">Нажмите ➕ чтобы добавить</div>
-    </div>
+    <div id="snacks-items"></div>
     </div>
     </div>
     </div>
@@ -575,7 +567,25 @@
 
     <script>
     // Инициализация Telegram Web App
-    const tg = window.Telegram.WebApp;
+    if (!window.Telegram) {
+  window.Telegram = {
+    WebApp: {
+      ready: () => {},
+      expand: () => {},
+      HapticFeedback: {
+        impactOccurred: () => {},
+        notificationOccurred: () => {}
+      },
+      showAlert: (msg) => alert(msg),
+      showPopup: (opt) => alert(opt.title + '\n' + opt.message),
+      CloudStorage: {
+        getItem: (key, cb) => cb(null, localStorage.getItem(key)),
+        setItem: (key, val, cb) => { localStorage.setItem(key, val); if (cb) cb(); }
+      }
+    }
+  };
+}
+const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
@@ -736,6 +746,19 @@
     loadDailyData();
     updateDateDisplay();
     updateDailySummary();
+
+    // Автоматическое обновление БЖУ при изменении калорий
+    document.getElementById('target-calories-input').addEventListener('input', function() {
+        const kcal = parseInt(this.value) || 2000;
+        // Предполагаемые пропорции: 25% белки, 30% жиры, 45% углеводы
+        const protein = Math.round((kcal * 0.25) / 4);
+        const fats = Math.round((kcal * 0.30) / 9);
+        const carbs = Math.round((kcal * 0.45) / 4);
+        
+        document.getElementById('target-protein-input').value = protein;
+        document.getElementById('target-fats-input').value = fats;
+        document.getElementById('target-carbs-input').value = carbs;
+    });
     });
 
     function showTab(tabName) {
@@ -895,6 +918,7 @@
     protein: Math.round(data.protein * multiplier * 10) / 10,
     fats: Math.round(data.fats * multiplier * 10) / 10,
     carbs: Math.round(data.carbs * multiplier * 10) / 10
+     per100: { calories: data.calories, protein: data.protein, fats: data.fats, carbs: data.carbs },\n
     });
     
     foundProducts.add(food);
@@ -921,6 +945,7 @@
     calories: Math.round(data.calories * multiplier),
     protein: Math.round(data.protein * multiplier * 10) / 10,
     fats: Math.round(data.fats * multiplier * 10) / 10,
+,\n     per100: { calories: data.calories, protein: data.protein, fats: data.fats, carbs: data.carbs }\n
     carbs: Math.round(data.carbs * multiplier * 10) / 10
     });
     }
@@ -1083,7 +1108,7 @@
     const container = document.getElementById(`${meal}-items`);
     
     if (mealData.length === 0) {
-    container.innerHTML = '<div class="empty-meal">Нажмите ➕ чтобы добавить</div>';
+    container.innerHTML = '';
     } else {
     container.innerHTML = mealData.map((item, index) => `
     <div class="food-item">
