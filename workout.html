@@ -1,1343 +1,317 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Workout Tracker - Telegram App</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-    * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+  <meta charset="UTF-8" />
+  <title>Трекер тренировок</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0f1115; --card: #171a21; --muted: #9aa4b2; --text: #e6e9ef;
+      --acc: #4f8cff; --line: #2a2f3a; --card2: #131720;
     }
-
-    body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background: var(--tg-theme-bg-color, #fff);
-    color: var(--tg-theme-text-color, #000);
-    padding-bottom: 60px;
-    overflow-x: hidden;
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+    header { background: var(--card); padding: 12px; position: sticky; top: 0; z-index: 5; border-bottom: 1px solid var(--line); }
+    h1 { margin: 0; font-size: 18px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .controls { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    input[type="date"] { background: var(--card2); border: 1px solid var(--line); color: var(--text); padding: 8px 10px; border-radius: 8px; }
+    button { background: var(--acc); color: #fff; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    button.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); }
+    button.warn { background: #f59e0b; }
+    main { padding: 12px; }
+    .day { background: var(--card); border-radius: 12px; padding: 10px; margin-bottom: 12px; border: 1px solid var(--line); }
+    .day h2 { margin: 0 0 6px; font-size: 16px; }
+    .desc { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .exercise { background: var(--card2); border: 1px dashed var(--line); border-radius: 8px; padding: 8px; margin-top: 8px; }
+    .ex-header { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .ex-header input[name="exName"] { flex: 1; background: #0f1320; border: 1px solid var(--line); color: var(--text); padding: 8px 10px; border-radius: 8px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid var(--line); padding: 6px; font-size: 13px; text-align: left; }
+    .table input { width: 100%; background: #0f1320; border: 1px solid var(--line); color: var(--text); padding: 6px 8px; border-radius: 6px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    @media (max-width: 720px) {
+      .table th:nth-child(2), .table td:nth-child(2) { display: none; } /* скрыть # на мобилках */
     }
-
-    .header {
-    background: var(--tg-theme-header-bg-color, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
-    color: white;
-    padding: 15px;
-    text-align: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    }
-
-    .header h1 {
-    font-size: 20px;
-    font-weight: 600;
-    }
-
-    .header-back {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 20px;
-    cursor: pointer;
-    }
-
-    .date-selector {
-    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-    padding: 10px 15px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--tg-theme-hint-color, #ccc);
-    }
-
-    .date-selector input {
-    background: var(--tg-theme-bg-color, white);
-    border: 1px solid var(--tg-theme-hint-color, #ccc);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 16px;
-    color: var(--tg-theme-text-color, #000);
-    }
-
-    .quick-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    padding: 15px;
-    background: var(--tg-theme-secondary-bg-color, #f8f9fa);
-    }
-
-    .stat-mini {
-    background: var(--tg-theme-bg-color, white);
-    padding: 12px;
-    border-radius: 12px;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-
-    .stat-mini-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--tg-theme-link-color, #667eea);
-    }
-
-    .stat-mini-label {
-    font-size: 12px;
-    color: var(--tg-theme-hint-color, #999);
-    margin-top: 4px;
-    }
-
-    .container {
-    padding: 15px;
-    }
-
-    .superset {
-    background: var(--tg-theme-bg-color, white);
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-    }
-
-    .superset-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-    }
-
-    .superset-title {
-    font-weight: 600;
-    color: var(--tg-theme-link-color, #667eea);
-    font-size: 16px;
-    }
-
-    .exercise-block {
-    margin-bottom: 15px;
-    }
-
-    .exercise-select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-    border-radius: 8px;
-    font-size: 16px;
-    margin-bottom: 6px;
-    background: var(--tg-theme-bg-color, white);
-    color: var(--tg-theme-text-color, #000);
-    }
-
-    .record-hint {
-    font-size: 12px;
-    color: var(--tg-theme-hint-color, #888);
-    margin-bottom: 8px;
-    }
-
-    .sets-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px;
-    }
-
-    .set-block {
-    background: var(--tg-theme-secondary-bg-color, #f8f9fa);
-    border-radius: 8px;
-    padding: 8px 28px 8px 8px; /* место под кнопку удаления */
-    border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-    position: relative;
-    }
-
-    .set-remove-btn {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: none;
-    background: #ff4d4f;
-    color: #fff;
-    font-weight: 700;
-    line-height: 20px;
-    text-align: center;
-    cursor: pointer;
-    opacity: 0.9;
-    }
-    .set-remove-btn:active { transform: scale(0.96); opacity: 1; }
-
-    .set-number {
-    font-size: 11px;
-    color: var(--tg-theme-hint-color, #999);
-    margin-bottom: 4px;
-    text-align: center;
-    }
-
-    .set-inputs {
-    display: flex;
-    gap: 4px;
-    }
-
-    .set-inputs input {
-    width: 50%;
-    padding: 6px 4px;
-    border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-    border-radius: 6px;
-    font-size: 14px;
-    text-align: center;
-    background: var(--tg-theme-bg-color, white);
-    color: var(--tg-theme-text-color, #000);
-    }
-
-    .set-inputs input:focus {
-    outline: none;
-    border-color: var(--tg-theme-link-color, #667eea);
-    }
-
-    .btn {
-    width: 100%;
-    padding: 12px;
-    background: var(--tg-theme-button-color, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
-    color: var(--tg-theme-button-text-color, white);
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s;
-    }
-
-    .btn:active {
-    transform: scale(0.98);
-    }
-
-    .btn-small {
-    padding: 6px 12px;
-    font-size: 14px;
-    }
-
-    .btn-danger {
-    background: #dc3545;
-    }
-
-    .btn-add {
-    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-    color: var(--tg-theme-link-color, #667eea);
-    border: 2px dashed var(--tg-theme-link-color, #667eea);
-    margin-bottom: 15px;
-    }
-
-    .bottom-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--tg-theme-bg-color, white);
-    border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-    padding: 8px 10px;
-    display: flex;
-    gap: 8px;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    }
-
-    .bottom-bar::-webkit-scrollbar { height: 6px; }
-    .bottom-bar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
-
-    .tab-btn {
-    flex: 1 0 20%;
-    min-width: 72px;
-    padding: 6px;
-    background: transparent;
-    border: none;
-    color: var(--tg-theme-hint-color, #999);
-    font-size: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    cursor: pointer;
-    }
-
-    .tab-btn.active {
-    color: var(--tg-theme-link-color, #667eea);
-    }
-
-    .tab-btn-icon {
-    font-size: 18px;
-    }
-
-    .tab-content {
-    display: none;
-    }
-
-    .tab-content.active {
-    display: block;
-    }
-
-    .history-item {
-    background: var(--tg-theme-bg-color, white);
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-    }
-
-    .history-date {
-    font-weight: 600;
-    color: var(--tg-theme-text-color, #000);
-    margin-bottom: 8px;
-    }
-
-    .history-stats {
-    display: flex;
-    justify-content: space-between;
-    color: var(--tg-theme-hint-color, #666);
-    font-size: 14px;
-    }
-
-    .exercise-item {
-    background: var(--tg-theme-secondary-bg-color, #f8f9fa);
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    }
-
-    .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--tg-theme-hint-color, #999);
-    }
-
-    .empty-state-icon {
-    font-size: 48px;
-    margin-bottom: 10px;
-    }
-
-    .loading {
-    text-align: center;
-    padding: 20px;
-    color: var(--tg-theme-hint-color, #999);
-    }
-
-    .section-title {
-    margin: 20px 0 10px;
-    color: var(--tg-theme-text-color, #000);
-    }
-
-    canvas {
-    width: 100%;
-    height: 200px;
-    background: var(--tg-theme-bg-color, #fff);
-    border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-    border-radius: 8px;
-    }
-
-    @media (max-width: 360px) {
-    .sets-container {
-    grid-template-columns: repeat(2, 1fr);
-    }
-    }
-    </style>
+  </style>
 </head>
 <body>
-    <div class="header" style="position: sticky; top: 0;">
-    <button class="header-back" onclick="goBack()" aria-label="Назад">←</button>
-    <h1>💪 Workout Tracker</h1>
+  <header>
+    <h1>Трекер тренировок</h1>
+    <div class="muted">Сохранение в Telegram CloudStorage</div>
+    <div class="controls">
+      <label for="date">Дата:</label>
+      <input type="date" id="date" />
+      <button id="save">Сохранить</button>
+      <button id="clear" class="ghost">Очистить день</button>
     </div>
+  </header>
 
-    <!-- Вкладка тренировки -->
-    <div id="workout-tab" class="tab-content active">
-    <div class="date-selector">
-    <label for="workout-date">Дата тренировки:</label>
-    <input type="date" id="workout-date">
-    </div>
+  <main>
+    <section class="day" id="day1">
+      <h2>День 1 — Грудь + Спина</h2>
+      <p class="desc">Суперсеты, 8–15 повт, отдых 45–75 с, RPE 7–8</p>
+      <div class="exercises"></div>
+      <div class="actions">
+        <button class="ghost add-ex" data-day="day1">+ упражнение</button>
+      </div>
+    </section>
 
-    <div class="quick-stats">
-    <div class="stat-mini">
-    <div class="stat-mini-value" id="current-volume">0</div>
-    <div class="stat-mini-label">Тоннаж (кг)</div>
-    </div>
-    <div class="stat-mini">
-    <div class="stat-mini-value" id="current-reps">0</div>
-    <div class="stat-mini-label">Повторений</div>
-    </div>
-    </div>
+    <section class="day" id="day2">
+      <h2>День 2 — Ноги + Кор</h2>
+      <p class="desc">Умеренный вес, 10–15 повт, эксцентрика 3 с, RPE 6–7</p>
+      <div class="exercises"></div>
+      <div class="actions">
+        <button class="ghost add-ex" data-day="day2">+ упражнение</button>
+      </div>
+    </section>
 
-    <div class="container" id="supersets-container">
-    <!-- Блоки (суперсет/упражнение) добавляются динамически -->
-    </div>
+    <section class="day" id="day3">
+      <h2>День 3 — Плечи + Тяга + Руки</h2>
+      <p class="desc">8–20 повт, пауза в пике, финишеры на памп, RPE 7–8</p>
+      <div class="exercises"></div>
+      <div class="actions">
+        <button class="ghost add-ex" data-day="day3">+ упражнение</button>
+      </div>
+    </section>
+  </main>
 
-    <div class="container">
-    <button id="add-btn" class="btn btn-add" onclick="addItem()">➕ Добавить суперсет</button>
-    <button class="btn" onclick="saveWorkout()">💾 Сохранить тренировку</button>
+  <template id="exercise-template">
+    <div class="exercise">
+      <div class="ex-header">
+        <input name="exName" placeholder="Название упражнения" />
+        <button class="ghost add-set" type="button">+ подход</button>
+        <button class="ghost remove-ex" type="button">Удалить упражнение</button>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Подход</th>
+            <th>Вес</th>
+            <th>Повторы</th>
+            <th>RPE</th>
+            <th>Заметки</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody class="sets"></tbody>
+      </table>
     </div>
-    </div>
+  </template>
 
-    <!-- Вкладка истории -->
-    <div id="history-tab" class="tab-content">
-    <div class="container" id="history-container">
-    <div class="loading">Загрузка...</div>
-    </div>
-    </div>
+  <template id="set-template">
+    <tr>
+      <td class="idx">1</td>
+      <td><input type="number" inputmode="numeric" placeholder="1" /></td>
+      <td><input type="number" step="0.5" inputmode="decimal" placeholder="кг" /></td>
+      <td><input type="number" inputmode="numeric" placeholder="повт" /></td>
+      <td><input type="number" step="0.5" inputmode="decimal" placeholder="RPE" /></td>
+      <td><input type="text" placeholder="заметки (суперсет, дроп-сет, пауза…)" /></td>
+      <td><button class="ghost remove-set" type="button">×</button></td>
+    </tr>
+  </template>
 
-    <!-- Вкладка статистики -->
-    <div id="stats-tab" class="tab-content">
-    <div class="container">
-    <div class="quick-stats">
-    <div class="stat-mini">
-    <div class="stat-mini-value" id="total-workouts">0</div>
-    <div class="stat-mini-label">Тренировок</div>
-    </div>
-    <div class="stat-mini">
-    <div class="stat-mini-value" id="total-volume">0</div>
-    <div class="stat-mini-label">Общий тоннаж</div>
-    </div>
-    <div class="stat-mini">
-    <div class="stat-mini-value" id="avg-volume">0</div>
-    <div class="stat-mini-label">Средний тоннаж</div>
-    </div>
-    <div class="stat-mini">
-    <div class="stat-mini-value" id="total-exercises">0</div>
-    <div class="stat-mini-label">Упражнений</div>
-    </div>
-    </div>
-
-    <h3 class="section-title">Топ упражнений:</h3>
-    <div id="top-exercises"></div>
-
-    <h3 class="section-title">Рекорды (макс. вес):</h3>
-    <div id="records-list"></div>
-
-    <h3 class="section-title">График прогресса:</h3>
-    <div style="display:flex; gap:10px; margin-bottom:10px;">
-    <select id="progress-exercise-select" class="exercise-select" style="flex:1;" onchange="updateProgressChart()">
-    <option value="">Выберите упражнение</option>
-    </select>
-    </div>
-    <canvas id="progress-canvas" width="600" height="220"></canvas>
-    <div id="progress-empty" class="empty-state" style="display:none;">Нет данных для выбранного упражнения</div>
-    <div id="progress-1rm" class="record-hint" style="text-align:center; margin-top:8px;"></div>
-    </div>
-    </div>
-
-    <!-- Вкладка упражнений -->
-    <div id="exercises-tab" class="tab-content">
-    <div class="container">
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-    <input type="text" id="new-exercise" placeholder="Новое упражнение" style="flex: 1; padding: 10px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 8px;">
-    <button class="btn btn-small" onclick="addExercise()">Добавить</button>
-    </div>
-    <div id="exercises-list"></div>
-    </div>
-    <div class="exercise-summary">
-    <span class="exercise-tonnage">Тоннаж: 0 кг</span> |
-    <span class="exercise-reps">Повторов: 0</span>
-    </div>
-    </div>
-
-    <!-- Вкладка настроек -->
-    <div id="settings-tab" class="tab-content">
-    <div class="container">
-    <h3 class="section-title">Режим тренировки</h3>
-    <select id="mode-select" class="exercise-select" onchange="changeMode(this.value)">
-    <option value="superset">Суперсетами</option>
-    <option value="single">Одиночные упражнения</option>
-    </select>
-    <div style="font-size:13px; color:var(--tg-theme-hint-color, #777); margin-top:6px;">
-    При выборе одиночных упражнений кнопка внизу меняется на “Добавить упражнение”, и каждый добавленный блок содержит одно упражнение.
-    </div>
-    </div>
-    </div>
-
-    <!-- Нижняя панель навигации -->
-    <div class="bottom-bar">
-    <button class="tab-btn active" onclick="showTab(this, 'workout')">
-    <span class="tab-btn-icon">🏋️</span>
-    <span>Тренировка</span>
-    </button>
-    <button class="tab-btn" onclick="showTab(this, 'history')">
-    <span class="tab-btn-icon">📋</span>
-    <span>История</span>
-    </button>
-    <button class="tab-btn" onclick="showTab(this, 'stats')">
-    <span class="tab-btn-icon">📊</span>
-    <span>Статистика</span>
-    </button>
-    <button class="tab-btn" onclick="showTab(this, 'exercises')">
-    <span class="tab-btn-icon">💪</span>
-    <span>Упражнения</span>
-    </button>
-    <button class="tab-btn" onclick="showTab(this, 'settings')">
-    <span class="tab-btn-icon">⚙️</span>
-    <span>Настройки</span>
-    </button>
-    </div>
-
-    <script>
-    // Инициализация Telegram Web App
+  <script>
+    // Telegram WebApp init
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+    if (tg.setHeaderColor) tg.setHeaderColor('#171a21');
+    const user = tg.initDataUnsafe?.user;
 
-    // Настройка темы
-    tg.setHeaderColor('secondary_bg_color');
-    tg.setBackgroundColor('bg_color');
+    const qs = (s, r=document) => r.querySelector(s);
+    const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-    // База упражнений
-    let exercises = [
-    'Подтягивания широким хватом',
-    'Подтягивания узким хватом',
-    'Отжимания на брусьях',
-    'Жим лежа штанга',
-    'Жим гантелей лежа',
-    'Разгибания ног',
-    'Сгибания ног',
-    'Приседания со штангой',
-    'Жим ногами',
-    'Тяга верхнего блока',
-    'Тяга горизонтального блока',
-    'Жим гантелей сидя',
-    'Махи в стороны',
-    'Подъем штанги на бицепс',
-    'Французский жим',
-    'Сведение рук в тренажере',
-    'Разводка гантелей',
-    'Гиперэкстензия',
-    'Скручивания',
-    'Планка'
-    ];
-
-    // Настройки и рекорды
-    let settings = { mode: 'superset' }; // 'superset' | 'single'
-    let records = {}; // { [exerciseName]: maxWeight }
-    let currentSupersetCount = 0;
-
-    // Инициализация
-    document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('workout-date').value = new Date().toISOString().split('T')[0];
-
-    // Загрузка данных (exercises, settings, records)
-    loadAll(() => {
-    // Построить начальные блоки
-    buildInitialItems();
-    // Обновить экраны
-    updateExercisesList();
-    updateStats();
-    populateProgressExerciseSelect();
-    updateModeUI();
-    refreshRecordHints();
-
-    // Для четкого canvas на ретина
-    resizeCanvasToDevicePixelRatio(document.getElementById('progress-canvas'));
-    });
-    });
-
-    function showTab(btn, tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.getElementById(tabName + '-tab').classList.add('active');
-
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-
-    if (tabName === 'history') {
-    updateHistory();
-    } else if (tabName === 'stats') {
-    updateStats();
-    updateProgressChart(); // обновить график при открытии
-    }
-
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    }
-
-    // Построение начальных блоков исходя из режима
-    function buildInitialItems() {
-    document.getElementById('supersets-container').innerHTML = '';
-    currentSupersetCount = 0;
-
-    // Добавим 3 блока в зависимости от режима
-    if (settings.mode === 'superset') {
-    addSuperset();
-    addSuperset();
-    addSuperset();
-    } else {
-    addSingleExercise();
-    addSingleExercise();
-    addSingleExercise();
-    }
-    updateCurrentStats();
-    }
-
-    function updateModeUI() {
-    const addBtn = document.getElementById('add-btn');
-    if (settings.mode === 'single') {
-    addBtn.textContent = '➕ Добавить упражнение';
-    } else {
-    addBtn.textContent = '➕ Добавить суперсет';
-    }
-    // Обновить селектор в настройках
-    const modeSelect = document.getElementById('mode-select');
-    if (modeSelect) modeSelect.value = settings.mode;
-    }
-
-    function addItem() {
-    if (settings.mode === 'single') {
-    addSingleExercise();
-    } else {
-    addSuperset();
-    }
-    }
-
-    function optionsHtml(arr) {
-      return arr.map(ex => `<option value="${escapeHtml(ex)}">${escapeHtml(ex)}</option>`).join('');
-    }
-
-    function addSuperset() {
-    currentSupersetCount++;
-    const container = document.getElementById('supersets-container');
-
-    const supersetDiv = document.createElement('div');
-    supersetDiv.className = 'superset';
-    supersetDiv.id = `superset-${currentSupersetCount}`;
-
-    supersetDiv.innerHTML = `
-    <div class="superset-header">
-    <span class="superset-title">Суперсет ${currentSupersetCount}</span>
-    <button class="btn btn-small btn-danger" onclick="removeSuperset(${currentSupersetCount})">✕</button>
-    </div>
-
-    <div class="exercise-block">
-    <select class="exercise-select" onchange="updateCurrentStats(); refreshRecordHints();">
-    <option value="">Выберите упражнение 1</option>
-    ${optionsHtml(exercises)}
-    </select>
-    <div class="record-hint"></div>
-    <div class="sets-container" id="sets-${currentSupersetCount}-1">
-    ${createSetBlocks(4)}
-    </div>
-    <button class="btn btn-small" style="margin-top: 8px;" onclick="addSet(${currentSupersetCount}, 1)">+ Подход</button>
-    </div>
-
-    <div class="exercise-block">
-    <select class="exercise-select" onchange="updateCurrentStats(); refreshRecordHints();">
-    <option value="">Выберите упражнение 2</option>
-    ${optionsHtml(exercises)}
-    </select>
-    <div class="record-hint"></div>
-    <div class="sets-container" id="sets-${currentSupersetCount}-2">
-    ${createSetBlocks(4)}
-    </div>
-    <button class="btn btn-small" style="margin-top: 8px;" onclick="addSet(${currentSupersetCount}, 2)">+ Подход</button>
-    </div>
-    `;
-
-    container.appendChild(supersetDiv);
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    refreshRecordHints();
-    }
-
-    function addSingleExercise() {
-    currentSupersetCount++;
-    const container = document.getElementById('supersets-container');
-
-    const blockDiv = document.createElement('div');
-    blockDiv.className = 'superset';
-    blockDiv.id = `superset-${currentSupersetCount}`;
-
-    blockDiv.innerHTML = `
-    <div class="superset-header">
-    <span class="superset-title">Упражнение ${currentSupersetCount}</span>
-    <button class="btn btn-small btn-danger" onclick="removeSuperset(${currentSupersetCount})">✕</button>
-    </div>
-
-    <div class="exercise-block">
-    <select class="exercise-select" onchange="updateCurrentStats(); refreshRecordHints();">
-    <option value="">Выберите упражнение</option>
-    ${optionsHtml(exercises)}
-    </select>
-    <div class="record-hint"></div>
-    <div class="sets-container" id="sets-${currentSupersetCount}-1">
-    ${createSetBlocks(4)}
-    </div>
-    <button class="btn btn-small" style="margin-top: 8px;" onclick="addSet(${currentSupersetCount}, 1)">+ Подход</button>
-    </div>
-    `;
-
-    container.appendChild(blockDiv);
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    refreshRecordHints();
-    }
-
-    function createSetBlocks(count) {
-    let html = '';
-    for (let i = 1; i <= count; i++) {
-    html += `
-    <div class="set-block">
-    <div class="set-number">Подход ${i}</div>
-    <div class="set-inputs">
-    <input type="number" placeholder="кг" class="weight-input" onchange="updateCurrentStats()">
-    <input type="number" placeholder="×" class="reps-input" onchange="updateCurrentStats()">
-    </div>
-    <button class="set-remove-btn" onclick="removeSet(this)" title="Удалить подход">×</button>
-    </div>
-    `;
-    }
-    return html;
-    }
-
-    function addSet(supersetId, exerciseNum) {
-    const container = document.getElementById(`sets-${supersetId}-${exerciseNum}`);
-    const setCount = container.querySelectorAll('.set-block').length + 1;
-
-    const setBlock = document.createElement('div');
-    setBlock.className = 'set-block';
-    setBlock.innerHTML = `
-    <div class="set-number">Подход ${setCount}</div>
-    <div class="set-inputs">
-    <input type="number" placeholder="кг" class="weight-input" onchange="updateCurrentStats()">
-    <input type="number" placeholder="×" class="reps-input" onchange="updateCurrentStats()">
-    </div>
-    <button class="set-remove-btn" onclick="removeSet(this)" title="Удалить подход">×</button>
-    `;
-
-    container.appendChild(setBlock);
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    }
-
-    function removeSet(btn) {
-    const setBlock = btn.closest('.set-block');
-    if (!setBlock) return;
-    const setsContainer = setBlock.parentElement; // .sets-container
-    setBlock.remove();
-
-    // Перенумерация
-    setsContainer.querySelectorAll('.set-block .set-number').forEach((el, idx) => {
-    el.textContent = `Подход ${idx + 1}`;
-    });
-
-    // Обновить стату
-    updateCurrentStats();
-
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    }
-
-    function removeSuperset(id) {
-    const superset = document.getElementById(`superset-${id}`);
-    if (superset) {
-    superset.remove();
-    updateCurrentStats();
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-    }
-    }
-
-    function updateCurrentStats() {
-    let totalVolume = 0;
-    let totalReps = 0;
-
-    document.querySelectorAll('.superset').forEach(superset => {
-    superset.querySelectorAll('.exercise-block').forEach(block => {
-    const exerciseName = block.querySelector('.exercise-select').value;
-    if (!exerciseName) return;
-
-    block.querySelectorAll('.set-block').forEach(setBlock => {
-    const weight = parseFloat(setBlock.querySelector('.weight-input').value) || 0;
-    const reps = parseInt(setBlock.querySelector('.reps-input').value) || 0;
-
-    if (weight > 0 && reps > 0) {
-    totalVolume += weight * reps;
-    totalReps += reps;
-    }
-    });
-    });
-    });
-
-    document.getElementById('current-volume').textContent = Math.round(totalVolume);
-    document.getElementById('current-reps').textContent = totalReps;
-    }
-
-    function saveWorkout() {
-    const date = document.getElementById('workout-date').value;
-    const supersets = document.querySelectorAll('.superset');
-
-    const workoutData = {
-    date: date,
-    exercises: [],
-    totalVolume: 0,
-    totalReps: 0,
-    userId: tg.initDataUnsafe?.user?.id || 'local'
+    const defaultPlan = {
+      day1: ["Жим лёжа", "Подтягивания / Тяга гориз. блока", "Жим гантелей на наклонной", "Тяга гантели в наклоне", "Face pull", "Планка (сек)"],
+      day2: ["Болгарские сплит‑приседы", "Жим ногами (если без боли)", "Румынская тяга с гантелями", "Шаги на тумбу / Санки", "Сгибания ног", "Планка (сек)", "Dead bug / Bird‑dog"],
+      day3: ["Жим гантелей сидя", "Тяга сверху / Подтягивания", "Махи в стороны", "Тяга к лицу", "Сгибания на бицепс", "Французский жим", "Велосипед (сек)"]
     };
 
-    supersets.forEach((superset, supersetIndex) => {
-    const exerciseBlocks = superset.querySelectorAll('.exercise-block');
-
-    exerciseBlocks.forEach(block => {
-    const exerciseName = block.querySelector('.exercise-select').value;
-    if (!exerciseName) return;
-
-    const sets = [];
-    let exerciseVolume = 0;
-    let exerciseReps = 0;
-    let maxWeight = 0;
-
-    block.querySelectorAll('.set-block').forEach(setBlock => {
-    const weight = parseFloat(setBlock.querySelector('.weight-input').value) || 0;
-    const reps = parseInt(setBlock.querySelector('.reps-input').value) || 0;
-
-    if (weight > 0 && reps > 0) {
-    sets.push({ weight, reps });
-    exerciseVolume += weight * reps;
-    exerciseReps += reps;
-    maxWeight = Math.max(maxWeight, weight);
-    }
-    });
-
-    if (sets.length > 0) {
-    workoutData.exercises.push({
-    superset: supersetIndex + 1,
-    name: exerciseName,
-    sets: sets,
-    volume: exerciseVolume,
-    totalReps: exerciseReps,
-    maxWeight: maxWeight
-    });
-
-    workoutData.totalVolume += exerciseVolume;
-    workoutData.totalReps += exerciseReps;
-    }
-    });
-    });
-
-    if (workoutData.exercises.length === 0) {
-    tg.showAlert('Добавьте хотя бы одно упражнение с весом и повторениями!');
-    return;
+    function todayISO() {
+      const d = new Date();
+      const tzOff = d.getTimezoneOffset() * 60000;
+      return new Date(Date.now() - tzOff).toISOString().slice(0,10);
     }
 
-    // Сохранение тренировки и обновление рекордов
-    saveToCloud(workoutData, () => {
-    // Обновить рекорды локально и UI подсказки
-    workoutData.exercises.forEach(ex => {
-    if (!records[ex.name] || ex.maxWeight > records[ex.name]) {
-    records[ex.name] = ex.maxWeight;
-    }
-    });
-    saveRecords(records, () => {
-    refreshRecordHints();
-    updateStats();
-    updateProgressChart();
-    });
-    });
-
-    // Показ уведомления
-    tg.showPopup({
-    title: 'Тренировка сохранена!',
-    message: `Тоннаж: ${workoutData.totalVolume} кг\nПовторений: ${workoutData.totalReps}`,
-    buttons: [{type: 'ok'}]
-    });
-
-    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
-    // Очистка формы
-    setTimeout(() => {
-    document.getElementById('supersets-container').innerHTML = '';
-    currentSupersetCount = 0;
-    buildInitialItems();
-    }, 800);
+    function renumber(tbody) {
+      qsa('tr', tbody).forEach((tr,i)=> tr.querySelector('.idx').textContent = i+1);
     }
 
-    function updateHistory() {
-    const container = document.getElementById('history-container');
+    function createExercise(name="") {
+      const tpl = qs('#exercise-template').content.cloneNode(true);
+      const ex = tpl.querySelector('.exercise');
+      const nameInput = ex.querySelector('input[name="exName"]');
+      nameInput.value = name;
+      const setsBody = ex.querySelector('.sets');
 
-    loadFromCloud((workouts) => {
-    if (!workouts || workouts.length === 0) {
-    container.innerHTML = `
-    <div class="empty-state">
-    <div class="empty-state-icon">📋</div>
-    <div>Нет сохраненных тренировок</div>
-    </div>
-    `;
-    return;
-    }
-
-    let html = '';
-    workouts.slice().reverse().forEach((workout, index) => {
-    const realIndex = workouts.length - 1 - index;
-    const date = new Date(workout.date);
-    const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-
-    html += `
-    <div class="history-item">
-    <div class="history-date">${dateStr}</div>
-    <div class="history-stats">
-    <span>💪 ${workout.exercises.length} упр.</span>
-    <span>⚖️ ${workout.totalVolume} кг</span>
-    <span>🔄 ${workout.totalReps} повт.</span>
-    </div>
-    <button class="btn btn-small" style="margin-top: 10px;" onclick="viewWorkout(${realIndex})">Подробнее</button>
-    </div>
-    `;
-    });
-
-    container.innerHTML = html;
-    });
-    }
-
-    function viewWorkout(index) {
-    loadFromCloud((workouts) => {
-    const workout = workouts[index];
-    if (!workout) return;
-
-    let details = `📅 ${new Date(workout.date).toLocaleDateString('ru-RU')}\n\n`;
-
-    let currentSupersetNum = 0;
-    workout.exercises.forEach(exercise => {
-    if (exercise.superset !== currentSupersetNum) {
-    currentSupersetNum = exercise.superset;
-    details += `\n🔄 Суперсет ${currentSupersetNum}:\n`;
-    }
-
-    const prMark = records[exercise.name] && exercise.maxWeight >= records[exercise.name] ? ' 🏆' : '';
-    details += `${exercise.name}${prMark}:\n`;
-    details += exercise.sets.map((set, i) => `  ${i+1}. ${set.weight}кг × ${set.reps}`).join('\n');
-    details += `\n  💪 Объем: ${exercise.volume}кг  |  Макс: ${exercise.maxWeight}кг\n`;
-    });
-
-    details += `\n📊 Итого:\n`;
-    details += `⚖️ Тоннаж: ${workout.totalVolume} кг\n`;
-    details += `🔄 Повторений: ${workout.totalReps}`;
-
-    tg.showPopup({
-    title: 'Детали тренировки',
-    message: details,
-    buttons: [{type: 'ok'}]
-    });
-    });
-    }
-
-    function updateStats() {
-    loadFromCloud((workouts) => {
-    if (!workouts) workouts = [];
-
-    const totalWorkouts = workouts.length;
-    const totalVolume = workouts.reduce((sum, w) => sum + w.totalVolume, 0);
-    const avgVolume = totalWorkouts > 0 ? Math.round(totalVolume / totalWorkouts) : 0;
-
-    // Подсчет упражнений
-    const exerciseCount = {};
-    workouts.forEach(workout => {
-    workout.exercises.forEach(ex => {
-    exerciseCount[ex.name] = (exerciseCount[ex.name] || 0) + 1;
-    });
-    });
-
-    const totalExercises = Object.keys(exerciseCount).length;
-
-    document.getElementById('total-workouts').textContent = totalWorkouts;
-    document.getElementById('total-volume').textContent = totalVolume > 1000 ?
-    (totalVolume / 1000).toFixed(1) + 'т' : totalVolume;
-    document.getElementById('avg-volume').textContent = avgVolume;
-    document.getElementById('total-exercises').textContent = totalExercises;
-
-    // Топ упражнений
-    const topExercises = Object.entries(exerciseCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
-    const topExercisesHtml = topExercises.map(([name, count]) => `
-    <div class="exercise-item">
-    <span>${name}</span>
-    <span>${count} раз</span>
-    </div>
-    `).join('');
-
-    document.getElementById('top-exercises').innerHTML = topExercisesHtml ||
-    '<div class="empty-state">Нет данных</div>';
-
-    // Рекорды
-    loadRecords((recs) => {
-    records = recs || {};
-    const recEntries = Object.entries(records)
-    .sort((a,b) => b[1] - a[1]); // по убыванию рекорда
-
-    document.getElementById('records-list').innerHTML = recEntries.length ? recEntries.map(([name, w]) => `
-    <div class="exercise-item">
-    <span>${name}</span>
-    <span>🏆 ${w} кг</span>
-    </div>
-    `).join('') : '<div class="empty-state">Рекордов пока нет</div>';
-
-    populateProgressExerciseSelect();
-    refreshRecordHints();
-    });
-    });
-    }
-
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;'}[c]));
-    }
-
-    function addExercise() {
-    const input = document.getElementById('new-exercise');
-    const exerciseName = input.value.trim();
-
-    if (exerciseName && !exercises.includes(exerciseName)) {
-    exercises.push(exerciseName);
-    exercises.sort();
-    saveExercises();
-    updateExercisesList();
-    populateProgressExerciseSelect();
-    input.value = '';
-
-    tg.showPopup({
-    title: 'Успешно!',
-    message: 'Упражнение добавлено',
-    buttons: [{type: 'ok'}]
-    });
-
-    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-    }
-    }
-
-    function updateExercisesList() {
-    const list = document.getElementById('exercises-list');
-    list.innerHTML = '';
-    exercises.forEach(ex => {
-      const item = document.createElement('div');
-      item.className = 'exercise-item';
-      const span = document.createElement('span');
-      span.textContent = ex;
-      const btn = document.createElement('button');
-      btn.className = 'btn btn-small btn-danger';
-      btn.textContent = '✕';
-      btn.addEventListener('click', () => removeExercise(ex));
-      item.append(span, btn);
-      list.appendChild(item);
-    });
-    }
-
-    function removeExercise(name) {
-    tg.showConfirm(`Удалить упражнение "${name}"?`, (confirmed) => {
-    if (confirmed) {
-    exercises = exercises.filter(ex => ex !== name);
-    saveExercises();
-    updateExercisesList();
-    populateProgressExerciseSelect();
-    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-    }
-    });
-    }
-
-    // Заполнение селектора для графика
-    function populateProgressExerciseSelect() {
-    const sel = document.getElementById('progress-exercise-select');
-    if (!sel) return;
-    const current = sel.value;
-    sel.innerHTML = '<option value="">Выберите упражнение</option>' + optionsHtml(exercises);
-    if (current && exercises.includes(current)) sel.value = current;
-    }
-
-    // Подсказки о рекорде под select
-    function refreshRecordHints() {
-    document.querySelectorAll('.exercise-block').forEach(block => {
-    const select = block.querySelector('.exercise-select');
-    const hint = block.querySelector('.record-hint');
-    if (!select || !hint) return;
-    const name = select.value;
-    if (name && records[name]) {
-    hint.textContent = `Текущий рекорд: ${records[name]} кг`;
-    } else if (name) {
-    hint.textContent = 'Рекорд не установлен';
-    } else {
-    hint.textContent = '';
-    }
-    });
-    }
-
-    // Простой рендер графика на canvas (макс. вес по датам)
-    function updateProgressChart() {
-    const exerciseName = document.getElementById('progress-exercise-select')?.value || '';
-    const canvas = document.getElementById('progress-canvas');
-    const empty = document.getElementById('progress-empty');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-
-    // Очистка
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (!exerciseName) {
-    empty.style.display = 'block';
-    empty.textContent = 'Выберите упражнение';
-    return;
-    }
-
-    loadFromCloud((workouts) => {
-    const points = [];
-    (workouts || []).forEach(w => {
-    const entry = w.exercises.find(e => e.name === exerciseName);
-    if (entry) {
-    points.push({ date: new Date(w.date), value: entry.maxWeight || 0 });
-    }
-    });
-
-    points.sort((a,b) => a.date - b.date);
-
-    if (points.length === 0) {
-    empty.style.display = 'block';
-    empty.textContent = 'Нет данных для выбранного упражнения';
-    return;
-    } else {
-    empty.style.display = 'none';
-    }
-
-    // Паддинги и оси
-    const padLeft = 40, padRight = 10, padTop = 10, padBottom = 30;
-    const W = canvas.width, H = canvas.height;
-    const plotW = W - padLeft - padRight;
-    const plotH = H - padTop - padBottom;
-
-    const minVal = 0;
-    const maxVal = Math.max(...points.map(p => p.value));
-    const valRange = Math.max(1, maxVal - minVal);
-
-    const minDate = points[0].date.getTime();
-    const maxDate = points[points.length - 1].date.getTime();
-    const dateRange = Math.max(1, maxDate - minDate);
-
-    // Оси
-    ctx.strokeStyle = '#aaa';
-    ctx.lineWidth = 1;
-    // Y axis
-    ctx.beginPath();
-    ctx.moveTo(padLeft, padTop);
-    ctx.lineTo(padLeft, H - padBottom);
-    ctx.stroke();
-    // X axis
-    ctx.beginPath();
-    ctx.moveTo(padLeft, H - padBottom);
-    ctx.lineTo(W - padRight, H - padBottom);
-    ctx.stroke();
-
-    // Сетки и метки по Y (4 деления)
-    ctx.fillStyle = '#666';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    const ticks = 4;
-    for (let i = 0; i <= ticks; i++) {
-    const v = minVal + (valRange * i / ticks);
-    const y = padTop + plotH - (plotH * (v - minVal) / valRange);
-    ctx.strokeStyle = '#eee';
-    ctx.beginPath();
-    ctx.moveTo(padLeft, y);
-    ctx.lineTo(W - padRight, y);
-    ctx.stroke();
-    ctx.fillStyle = '#666';
-    ctx.fillText(Math.round(v).toString(), padLeft - 6, y);
-    }
-
-    // Подписи по X: первая и последняя дата
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = '#666';
-    const firstDateStr = new Date(minDate).toLocaleDateString('ru-RU');
-    const lastDateStr = new Date(maxDate).toLocaleDateString('ru-RU');
-    ctx.fillText(firstDateStr, padLeft, H - padBottom + 6);
-    ctx.fillText(lastDateStr, W - padRight, H - padBottom + 6);
-
-    // Линия
-    ctx.strokeStyle = '#667eea';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    points.forEach((p, idx) => {
-    const x = padLeft + (plotW * (p.date.getTime() - minDate) / dateRange);
-    const y = padTop + plotH - (plotH * (p.value - minVal) / valRange);
-    if (idx === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    // Точки
-    ctx.fillStyle = '#764ba2';
-    points.forEach(p => {
-    const x = padLeft + (plotW * (p.date.getTime() - minDate) / dateRange);
-    const y = padTop + plotH - (plotH * (p.value - minVal) / valRange);
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fill();
-    });
-    });
-    }
-
-    // Retina scaling
-    function resizeCanvasToDevicePixelRatio(canvas, cssW = canvas.clientWidth, cssH = canvas.clientHeight) {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.round(cssW * dpr);
-      canvas.height = Math.round(cssH * dpr);
-      const ctx = canvas.getContext('2d');
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-
-    // Работа с CloudStorage (тренировки)
-    function saveToCloud(workoutData, cb) {
-    const key = 'workouts';
-    tg.CloudStorage.getItem(key, (error, value) => {
-    let workouts = [];
-    if (value) {
-    try { workouts = JSON.parse(value); } catch (e) { console.error('Error parsing workouts:', e); }
-    } else {
-    // fallback local
-    const local = localStorage.getItem(key);
-    if (local) { try { workouts = JSON.parse(local); } catch (e) {} }
-    }
-
-    workouts.push(workoutData);
-    if (workouts.length > 100) workouts = workouts.slice(-100);
-
-    tg.CloudStorage.setItem(key, JSON.stringify(workouts), (err) => {
-    if (err) {
-    console.error('Error saving to cloud:', err);
-    localStorage.setItem(key, JSON.stringify(workouts));
-    }
-    if (typeof cb === 'function') cb();
-    });
-    });
-    }
-
-    function loadFromCloud(callback) {
-    const key = 'workouts';
-    tg.CloudStorage.getItem(key, (error, value) => {
-    if (error) {
-    const localData = localStorage.getItem(key);
-    if (localData) {
-    try { callback(JSON.parse(localData)); } catch (e) { callback([]); }
-    } else {
-    callback([]);
-    }
-    } else {
-    if (value) {
-    try { callback(JSON.parse(value)); } catch (e) { callback([]); }
-    } else {
-    callback([]);
-    }
-    }
-    });
-    }
-
-    // Рекорды
-    function saveRecords(recs, cb) {
-    tg.CloudStorage.setItem('records', JSON.stringify(recs), (error) => {
-    if (error) localStorage.setItem('records', JSON.stringify(recs));
-    if (typeof cb === 'function') cb();
-    });
-    }
-
-    function loadRecords(callback) {
-    tg.CloudStorage.getItem('records', (error, value) => {
-    if (value) {
-    try { callback(JSON.parse(value)); return; } catch (e) {}
-    }
-    const local = localStorage.getItem('records');
-    if (local) {
-    try { callback(JSON.parse(local)); return; } catch (e) {}
-    }
-    callback({});
-    });
-    }
-
-    // Настройки
-    function changeMode(newMode) {
-    settings.mode = newMode === 'single' ? 'single' : 'superset';
-    saveSettings(settings, () => {
-    updateModeUI();
-    buildInitialItems();
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    });
-    }
-
-    function saveSettings(s, cb) {
-    tg.CloudStorage.setItem('settings', JSON.stringify(s), (error) => {
-    if (error) localStorage.setItem('settings', JSON.stringify(s));
-    if (typeof cb === 'function') cb();
-    });
-    }
-
-    function loadSettings(callback) {
-    tg.CloudStorage.getItem('settings', (error, value) => {
-    if (value) {
-    try { settings = JSON.parse(value); } catch (e) {}
-    } else {
-    const local = localStorage.getItem('settings');
-    if (local) { try { settings = JSON.parse(local); } catch (e) {} }
-    }
-    if (!settings || !settings.mode) settings = { mode: 'superset' };
-    callback();
-    });
-    }
-
-    function saveExercises() {
-    tg.CloudStorage.setItem('exercises', JSON.stringify(exercises), (error) => {
-    if (error) localStorage.setItem('exercises', JSON.stringify(exercises));
-    });
-    }
-
-    function loadData() {
-    // Загрузка упражнений
-    return new Promise((resolve) => {
-    tg.CloudStorage.getItem('exercises', (error, value) => {
-    if (value) {
-    try { exercises = JSON.parse(value); } catch (e) { console.error('Error parsing exercises:', e); }
-    } else {
-    const localExercises = localStorage.getItem('exercises');
-    if (localExercises) {
-    try { exercises = JSON.parse(localExercises); } catch (e) { console.error('Error parsing local exercises:', e); }
-    }
-    }
-    resolve();
-    });
-    });
-    }
-
-    function loadAll(done) {
-    loadData().then(() => {
-    loadSettings(() => {
-    loadRecords((recs) => {
-    records = recs || {};
-    if (typeof done === 'function') done();
-    });
-    });
-    });
-    }
-
-    // Обработка кнопки "Назад"
-    tg.BackButton.onClick(() => {
-    tg.close();
-    });
-
-    function goBack() {
-      if (window.Telegram?.WebApp?.close) {
-        window.Telegram.WebApp.close();
-      } else {
-        history.back();
+      function addSetRow(values={}) {
+        const stpl = qs('#set-template').content.cloneNode(true);
+        const row = stpl.querySelector('tr');
+        const ins = row.querySelectorAll('input');
+        // order: set, weight, reps, rpe, note
+        ins[0].value = values.set ?? '';
+        ins[1].value = values.weight ?? '';
+        ins[2].value = values.reps ?? '';
+        ins[3].value = values.rpe ?? '';
+        ins[4].value = values.note ?? '';
+        row.querySelector('.remove-set').addEventListener('click', ()=>{ row.remove(); renumber(setsBody); });
+        setsBody.appendChild(row);
+        renumber(setsBody);
       }
+
+      ex.querySelector('.add-set').addEventListener('click', ()=> addSetRow());
+      ex.querySelector('.remove-ex').addEventListener('click', ()=> ex.remove());
+      // стартовый пустой подход
+      addSetRow();
+      return ex;
     }
-    </script>
+
+    function renderDay(dayId, planNames) {
+      const container = qs(`#${dayId} .exercises`);
+      container.innerHTML = '';
+      planNames.forEach(n => container.appendChild(createExercise(n)));
+    }
+
+    function collectDay(dayId) {
+      const day = qs(`#${dayId}`);
+      const data = [];
+      qsa('.exercise', day).forEach(ex => {
+        const name = qs('input[name="exName"]', ex).value.trim();
+        const sets = [];
+        qsa('tbody.sets tr', ex).forEach(tr => {
+          const ins = tr.querySelectorAll('input');
+          sets.push({
+            set: ins[0].value || '',
+            weight: ins[1].value || '',
+            reps: ins[2].value || '',
+            rpe: ins[3].value || '',
+            note: ins[4].value || ''
+          });
+        });
+        data.push({ name, sets });
+      });
+      return data;
+    }
+
+    function populateDay(dayId, data) {
+      const container = qs(`#${dayId} .exercises`);
+      container.innerHTML = '';
+      (data || []).forEach(exData => {
+        const ex = createExercise(exData.name || '');
+        const setsBody = ex.querySelector('.sets');
+        setsBody.innerHTML = '';
+        (exData.sets || []).forEach(s => {
+          const stpl = qs('#set-template').content.cloneNode(true);
+          const row = stpl.querySelector('tr');
+          const inputs = row.querySelectorAll('input');
+          inputs[0].value = s.set ?? '';
+          inputs[1].value = s.weight ?? '';
+          inputs[2].value = s.reps ?? '';
+          inputs[3].value = s.rpe ?? '';
+          inputs[4].value = s.note ?? '';
+          row.querySelector('.remove-set').addEventListener('click', () => { row.remove(); renumber(setsBody); });
+          setsBody.appendChild(row);
+        });
+        renumber(setsBody);
+        container.appendChild(ex);
+      });
+    }
+
+    function loadWorkout(date) {
+      tg.CloudStorage.getItem(`workout_${date}`, (err, value) => {
+        if (err) {
+          tg.showAlert('Ошибка загрузки данных');
+          return;
+        }
+        if (value) {
+          try {
+            const data = JSON.parse(value);
+            populateDay('day1', data.day1);
+            populateDay('day2', data.day2);
+            populateDay('day3', data.day3);
+          } catch (e) {
+            console.error(e);
+            renderDefaults();
+          }
+        } else {
+          renderDefaults();
+        }
+      });
+    }
+
+    function renderDefaults() {
+      renderDay('day1', defaultPlan.day1);
+      renderDay('day2', defaultPlan.day2);
+      renderDay('day3', defaultPlan.day3);
+    }
+
+    function saveWorkoutsIndex(date) {
+      // обновляем общий список дат для главной страницы (index.html читает 'workouts')
+      tg.CloudStorage.getItem('workouts', (err, value) => {
+        let workouts = [];
+        if (value) {
+          try { workouts = JSON.parse(value) || []; } catch {}
+        }
+        const exists = workouts.some(w => w.date === date);
+        if (!exists) workouts.push({ date, savedAt: new Date().toISOString() });
+        // храним не больше 180 записей, чтобы не раздувать
+        workouts = workouts.slice(-180);
+        tg.CloudStorage.setItem('workouts', JSON.stringify(workouts), () => {});
+      });
+    }
+
+    // Events
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.add-ex');
+      if (btn) {
+        qs(`#${btn.dataset.day} .exercises`).appendChild(createExercise('Новое упражнение'));
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      }
+    });
+
+    qs('#save').addEventListener('click', () => {
+      const date = qs('#date').value;
+      if (!date) return tg.showAlert('Выбери дату');
+      const payload = {
+        userId: user?.id,
+        username: user?.username,
+        date,
+        day1: collectDay('day1'),
+        day2: collectDay('day2'),
+        day3: collectDay('day3'),
+        savedAt: new Date().toISOString()
+      };
+      tg.CloudStorage.setItem(`workout_${date}`, JSON.stringify(payload), (err, ok) => {
+        if (ok) {
+          saveWorkoutsIndex(date);
+          if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+          tg.showAlert('Тренировка сохранена ✅');
+        } else {
+          if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+          tg.showAlert('Ошибка сохранения');
+        }
+      });
+    });
+
+    qs('#clear').addEventListener('click', () => {
+      const date = qs('#date').value;
+      if (!date) return tg.showAlert('Выбери дату');
+      tg.CloudStorage.removeItem(`workout_${date}`, (err, ok) => {
+        renderDefaults();
+        tg.showAlert('День очищен');
+      });
+    });
+
+    qs('#date').addEventListener('change', (e) => {
+      loadWorkout(e.target.value);
+    });
+
+    // Init
+    qs('#date').value = todayISO();
+    loadWorkout(qs('#date').value);
+  </script>
 </body>
 </html>
