@@ -6,9 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root { --bg:#0f1115; --card:#171a21; --card2:#131720; --text:#e6e9ef; --muted:#9aa4b2; --line:#2a2f3a; --acc:#4f8cff; --danger:#ef4444; }
+    :root {
+      --bg:#0f1115; --card:#171a21; --card2:#131720; --text:#e6e9ef; --muted:#9aa4b2;
+      --line:#2a2f3a; --acc:#4f8cff; --danger:#ef4444; --ok:#22c55e;
+    }
     * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); padding-bottom:72px; }
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); padding-bottom:84px; }
     header { position:sticky; top:0; z-index:10; background:var(--card); border-bottom:1px solid var(--line); padding:12px; }
     h1 { margin:0; font-size:18px; }
     .muted { color:var(--muted); font-size:13px; }
@@ -17,10 +20,10 @@
     button { background:var(--acc); color:#fff; border:none; padding:8px 12px; border-radius:8px; font-weight:600; cursor:pointer; }
     button.ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
     button.danger { background:var(--danger); }
+    main { padding:12px; }
     .tabs { margin-top:10px; display:flex; gap:8px; }
     .tab-btn { background:transparent; border:1px solid var(--line); color:var(--text); padding:8px 12px; border-radius:999px; font-weight:600; cursor:pointer; }
     .tab-btn.active { background:var(--acc); border-color:var(--acc); }
-    main { padding:12px; }
     .tab { display:none; } .tab.active { display:block; }
 
     /* Workout tab */
@@ -37,12 +40,17 @@
     .subex { background:var(--card2); border:1px dashed var(--line); border-radius:10px; padding:8px; margin-top:8px; }
     .subex-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
     .subex-row input[name="exName"] { flex:1; background:#0f1320; border:1px solid var(--line); color:var(--text); padding:8px 10px; border-radius:8px; font-weight:600; }
-    .sets { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:8px; }
+    .sets { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:8px; }
     .set { background:#101522; border:1px solid var(--line); border-radius:8px; padding:8px; position:relative; }
     .set .num { font-size:11px; color:var(--muted); margin-bottom:6px; text-align:center; }
-    .set .row { display:flex; gap:6px; }
-    .set input { width:100%; background:#0f1320; border:1px solid var(--line); color:var(--text); padding:6px 8px; border-radius:6px; text-align:center; }
+    .set .row { display:grid; grid-template-columns: 1fr 1fr; gap:8px; align-items:center; }
+    .num-input { display:flex; align-items:center; background:#0f1320; border:1px solid var(--line); border-radius:8px; overflow:hidden; height:36px; }
+    .num-input button { width:36px; height:100%; background:transparent; border:none; color:#cbd5e1; font-size:18px; cursor:pointer; }
+    .num-input button:active { background:#0d1220; }
+    .num-input .value { flex:1; text-align:center; font-weight:700; letter-spacing:0.2px; cursor:pointer; }
+    .num-input .unit { width:44px; text-align:center; font-size:12px; color:#94a3b8; border-left:1px solid var(--line); }
     .set .rm { position:absolute; top:6px; right:6px; background:var(--danger); color:#fff; border:none; width:22px; height:22px; border-radius:50%; font-weight:800; cursor:pointer; }
+
     .page-actions { display:flex; gap:8px; position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--line); padding:8px 12px; z-index:9; }
     .page-actions button { flex:1; }
     @media (max-width:420px){ .stats{ grid-template-columns:1fr 1fr; } }
@@ -60,6 +68,25 @@
     .chart-header select { flex:1; background:#0f1320; border:1px solid var(--line); color:var(--text); padding:8px 10px; border-radius:8px; }
     canvas { width:100%; height:220px; background:#0f1320; border:1px solid var(--line); border-radius:8px; }
     .empty { color:var(--muted); text-align:center; padding:16px 8px; }
+
+    /* Picker modal */
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:none; align-items:flex-end; justify-content:center; z-index:20; }
+    .modal.show { display:flex; }
+    .sheet { width:100%; max-width:520px; background:var(--card); border-top-left-radius:16px; border-top-right-radius:16px; border:1px solid var(--line); padding:12px; }
+    .sheet-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .sheet-title { font-weight:700; }
+    .picker { height:200px; overflow-y:auto; scroll-snap-type:y mandatory; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:6px 0; }
+    .pick-item { height:40px; display:flex; align-items:center; justify-content:center; scroll-snap-align:center; color:#cbd5e1; font-weight:600; }
+    .pick-item.active { color:#fff; }
+    .sheet-actions { display:flex; gap:8px; margin-top:10px; }
+    .btn-ok { background:var(--ok); }
+    .btn-cancel { background:transparent; border:1px solid var(--line); color:var(--text); }
+    .center-line { position:relative; }
+    .center-line::before, .center-line::after {
+      content:""; position:absolute; left:10px; right:10px; height:0; border-top:1px dashed #334155;
+    }
+    .center-line::before { top:80px; } /* 40px * 2 */
+    .center-line::after  { top:120px; } /* 40px * 3 */
   </style>
 </head>
 <body>
@@ -89,7 +116,7 @@
         <div class="stat"><h3>Макс. вес</h3><p id="statMax">0 кг</p></div>
       </div>
 
-      <div class="hint">Добавляй суперсеты или одиночные упражнения. В каждом упражнении укажи вес и повторы — статистика обновится автоматически.</div>
+      <div class="hint">Добавляй суперсеты или одиночные упражнения. Тапай по числу, чтобы открыть колесо выбора. Кнопки +/- — для быстрого изменения.</div>
 
       <div id="blocks" class="blocks"></div>
     </section>
@@ -135,85 +162,106 @@
     </section>
   </main>
 
-  <!-- Кнопки добавления (только для вкладки Тренировка) -->
+  <!-- Кнопки добавления -->
   <div class="page-actions" id="page-actions">
     <button id="addSingle" class="ghost">+ Упражнение</button>
     <button id="addSuperset" class="ghost">+ Суперсет</button>
   </div>
 
- <datalist id="exercise-suggestions">
-  <!-- Грудь -->
-  <option value="Жим лёжа штанга"></option>
-  <option value="Жим лёжа гантели"></option>
-  <option value="Жим на наклонной скамье штанга"></option>
-  <option value="Жим на наклонной скамье гантели"></option>
-  <option value="Разводка гантелей лёжа"></option>
-  <option value="Сведение рук в тренажёре (бабочка)"></option>
-  <option value="Отжимания от пола"></option>
-  <option value="Отжимания на брусьях (грудь)"></option>
-
-  <!-- Спина -->
-  <option value="Подтягивания широким хватом"></option>
-  <option value="Подтягивания узким хватом"></option>
-  <option value="Тяга верхнего блока"></option>
-  <option value="Тяга горизонтального блока"></option>
-  <option value="Тяга штанги в наклоне"></option>
-  <option value="Тяга гантели в наклоне"></option>
-  <option value="Тяга Т-грифа"></option>
-  <option value="Пуловер с гантелью"></option>
-  <option value="Гиперэкстензия"></option>
-
-  <!-- Ноги -->
-  <option value="Приседания со штангой"></option>
-  <option value="Приседания с гантелями"></option>
-  <option value="Фронтальные приседания"></option>
-  <option value="Жим ногами"></option>
-  <option value="Выпады с гантелями"></option>
-  <option value="Болгарские сплит-приседания"></option>
-  <option value="Сгибания ног лёжа"></option>
-  <option value="Разгибания ног сидя"></option>
-  <option value="Подъём на носки стоя (икры)"></option>
-  <option value="Подъём на носки сидя (икры)"></option>
-  <option value="Румынская тяга со штангой"></option>
-  <option value="Румынская тяга с гантелями"></option>
-
-  <!-- Плечи -->
-  <option value="Жим гантелей сидя"></option>
-  <option value="Жим штанги стоя"></option>
-  <option value="Махи гантелями в стороны"></option>
-  <option value="Махи гантелями вперёд"></option>
-  <option value="Тяга штанги к подбородку"></option>
-  <option value="Обратные махи (задняя дельта)"></option>
-  <option value="Тяга каната к лицу (Face Pull)"></option>
-
-  <!-- Руки -->
-  <option value="Подъём штанги на бицепс"></option>
-  <option value="Подъём гантелей на бицепс"></option>
-  <option value="Молотки с гантелями"></option>
-  <option value="Французский жим штанги"></option>
-  <option value="Французский жим гантели"></option>
-  <option value="Разгибания рук на блоке (трицепс)"></option>
-  <option value="Отжимания на брусьях (трицепс)"></option>
-
-  <!-- Пресс -->
-  <option value="Скручивания на полу"></option>
-  <option value="Скручивания на фитболе"></option>
-  <option value="Подъём ног в висе"></option>
-  <option value="Планка"></option>
-  <option value="Велосипед (пресс)"></option>
-  <option value="Русский твист"></option>
-</datalist>
+  <datalist id="exercise-suggestions">
+    <!-- Грудь -->
+    <option value="Жим лёжа штанга"></option>
+    <option value="Жим лёжа гантели"></option>
+    <option value="Жим на наклонной скамье штанга"></option>
+    <option value="Жим на наклонной скамье гантели"></option>
+    <option value="Разводка гантелей лёжа"></option>
+    <option value="Сведение рук в тренажёре (бабочка)"></option>
+    <option value="Отжимания от пола"></option>
+    <option value="Отжимания на брусьях (грудь)"></option>
+    <!-- Спина -->
+    <option value="Подтягивания широким хватом"></option>
+    <option value="Подтягивания узким хватом"></option>
+    <option value="Тяга верхнего блока"></option>
+    <option value="Тяга горизонтального блока"></option>
+    <option value="Тяга штанги в наклоне"></option>
+    <option value="Тяга гантели в наклоне"></option>
+    <option value="Тяга Т-грифа"></option>
+    <option value="Пуловер с гантелью"></option>
+    <option value="Гиперэкстензия"></option>
+    <!-- Ноги -->
+    <option value="Приседания со штангой"></option>
+    <option value="Фронтальные приседания"></option>
+    <option value="Приседания с гантелями"></option>
+    <option value="Жим ногами"></option>
+    <option value="Выпады с гантелями"></option>
+    <option value="Болгарские сплит-приседания"></option>
+    <option value="Сгибания ног лёжа"></option>
+    <option value="Разгибания ног сидя"></option>
+    <option value="Подъём на носки стоя (икры)"></option>
+    <option value="Подъём на носки сидя (икры)"></option>
+    <option value="Румынская тяга со штангой"></option>
+    <option value="Румынская тяга с гантелями"></option>
+    <!-- Плечи -->
+    <option value="Жим гантелей сидя"></option>
+    <option value="Жим штанги стоя"></option>
+    <option value="Махи гантелями в стороны"></option>
+    <option value="Махи гантелями вперёд"></option>
+    <option value="Тяга штанги к подбородку"></option>
+    <option value="Обратные махи (задняя дельта)"></option>
+    <option value="Тяга каната к лицу (Face Pull)"></option>
+    <!-- Руки -->
+    <option value="Подъём штанги на бицепс"></option>
+    <option value="Подъём гантелей на бицепс"></option>
+    <option value="Молотки с гантелями"></option>
+    <option value="Французский жим штанги"></option>
+    <option value="Французский жим гантели"></option>
+    <option value="Разгибания рук на блоке (трицепс)"></option>
+    <option value="Отжимания на брусьях (трицепс)"></option>
+    <!-- Пресс -->
+    <option value="Скручивания на полу"></option>
+    <option value="Скручивания на фитболе"></option>
+    <option value="Подъём ног в висе"></option>
+    <option value="Планка"></option>
+    <option value="Велосипед (пресс)"></option>
+    <option value="Русский твист"></option>
+  </datalist>
 
   <template id="set-template">
     <div class="set">
       <div class="num">Подход 1</div>
       <div class="row">
-        <input class="w" type="number" step="0.5" placeholder="кг" />
-        <input class="r" type="number" placeholder="повт" />
+        <div class="num-input" data-type="weight" data-step="2.5">
+          <button class="minus" type="button">−</button>
+          <div class="value" role="button" aria-label="Вес">0</div>
+          <div class="unit">кг</div>
+          <button class="plus" type="button">+</button>
+        </div>
+        <div class="num-input" data-type="reps" data-step="1">
+          <button class="minus" type="button">−</button>
+          <div class="value" role="button" aria-label="Повторы">0</div>
+          <div class="unit">×</div>
+          <button class="plus" type="button">+</button>
+        </div>
       </div>
-      <button class="rm" type="button">×</button>
+      <button class="rm" type="button" title="Удалить подход">×</button>
     </div>
   </template>
+
+  <!-- Picker Modal -->
+  <div class="modal" id="picker-modal" aria-hidden="true">
+    <div class="sheet">
+      <div class="sheet-header">
+        <div class="sheet-title" id="picker-title">Выбор значения</div>
+        <button class="btn-cancel" id="picker-cancel">Отмена</button>
+      </div>
+      <div class="center-line">
+        <div class="picker" id="picker-list"></div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn-ok" id="picker-ok">OK</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // Telegram init
@@ -225,6 +273,7 @@
     const qs = (s, r=document) => r.querySelector(s);
     const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
     const $date = qs('#date'), $blocks = qs('#blocks'), $pageActions = qs('#page-actions');
+
     let blockCounter = 0, workoutsCache = [];
 
     function escapeHtml(s=''){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -244,25 +293,61 @@
 
     // Workout UI
     function renumberSets(c){ qsa('.set', c).forEach((el,i)=> el.querySelector('.num').textContent = `Подход ${i+1}`); }
+    function getNum(el){ return parseFloat(el.textContent) || 0; }
+    function setNum(el, val){ el.textContent = String(val); }
     function updateStats(){
       let volume=0,reps=0,maxW=0;
       qsa('.set').forEach(s=>{
-        const w=parseFloat(qs('.w',s).value)||0, r=parseInt(qs('.r',s).value)||0;
-        if(w>0&&r>0){ volume+=w*r; reps+=r; if(w>maxW) maxW=w; }
+        const weight = getNum(qs('.num-input[data-type="weight"] .value', s));
+        const r = getNum(qs('.num-input[data-type="reps"] .value', s));
+        if (weight>0 && r>0) {
+          volume += weight * r; reps += r; if (weight > maxW) maxW = weight;
+        }
       });
       qs('#statVolume').textContent = `${Math.round(volume)} кг`;
       qs('#statReps').textContent = `${reps}`;
       qs('#statMax').textContent = `${maxW} кг`;
     }
+
     function createSet(v={}){
       const tpl = qs('#set-template').content.cloneNode(true);
       const s = tpl.querySelector('.set');
-      const w = qs('.w', s), r = qs('.r', s);
-      if(v.weight!=null) w.value=v.weight; if(v.reps!=null) r.value=v.reps;
-      w.addEventListener('input', updateStats); r.addEventListener('input', updateStats);
-      qs('.rm', s).addEventListener('click', () => { const p=s.parentElement; s.remove(); renumberSets(p); updateStats(); haptic('light'); });
+      const wEl = qs('.num-input[data-type="weight"] .value', s);
+      const rEl = qs('.num-input[data-type="reps"] .value', s);
+      setNum(wEl, v.weight != null ? v.weight : 0);
+      setNum(rEl, v.reps != null ? v.reps : 0);
+      // plus/minus
+      s.addEventListener('click', (ev)=>{
+        const btn = ev.target.closest('button');
+        if (!btn) return;
+        if (btn.classList.contains('rm')) return; // handled below
+        const wrap = btn.closest('.num-input');
+        if (!wrap) return;
+        const valEl = qs('.value', wrap);
+        const step = parseFloat(wrap.dataset.step) || (wrap.dataset.type==='weight'?2.5:1);
+        let val = getNum(valEl);
+        if (btn.classList.contains('plus')) val += step;
+        if (btn.classList.contains('minus')) val = Math.max(0, val - step);
+        // round to nearest step to avoid floats
+        const factor = wrap.dataset.type==='weight' ? 10 : 1;
+        val = wrap.dataset.type==='weight' ? Math.round(val*factor)/factor : Math.round(val);
+        setNum(valEl, val);
+        updateStats();
+        haptic('light');
+      });
+      // open picker on value click
+      qsa('.num-input .value', s).forEach(vnode=>{
+        vnode.addEventListener('click', ()=> openPicker(vnode));
+      });
+      // remove set
+      qs('.rm', s).addEventListener('click', ()=>{
+        const parent = s.parentElement;
+        s.remove(); renumberSets(parent); updateStats(); haptic('medium');
+      });
+      updateStats();
       return s;
     }
+
     function subExerciseTemplate(title='Упражнение', suggested=true){
       const sub = document.createElement('div'); sub.className='subex';
       sub.innerHTML = `
@@ -277,6 +362,7 @@
       qs('.addSet', sub).addEventListener('click', ()=>{ sets.appendChild(createSet()); renumberSets(sets); updateStats(); haptic('light'); });
       return sub;
     }
+
     function addBlock(type='single'){
       blockCounter+=1; const idx=blockCounter;
       const b=document.createElement('div'); b.className='block'; b.dataset.superset=String(idx);
@@ -284,7 +370,7 @@
         <div class="block-header">
           <div class="block-title">${type==='superset'?'Суперсет':'Упражнение'} ${idx}</div>
           <div class="block-actions">
-            <button class="ghost addSetAll" type="button">+ подход</button>
+            <button class="ghost addSetAll" type="button">+ подход всем</button>
             <button class="danger removeBlock" type="button">Удалить</button>
           </div>
         </div>`;
@@ -294,6 +380,7 @@
       qs('.addSetAll', b).addEventListener('click', ()=>{ qsa('.subex', b).forEach(se=>{ const sets=qs('.sets',se); sets.appendChild(createSet()); renumberSets(sets); }); updateStats(); haptic('light'); });
       $blocks.appendChild(b); haptic('light');
     }
+
     function renumberBlocks(){
       let i=1; qsa('.block').forEach(b=>{ b.dataset.superset=String(i); const t=qs('.block-title',b);
         t.textContent = (t.textContent.startsWith('Суперсет')?'Суперсет ':'Упражнение ') + i; i++; });
@@ -309,7 +396,8 @@
           if(!name) return;
           const sets=[]; let exVol=0, exReps=0, maxW=0;
           qsa('.set', sub).forEach(s=>{
-            const w=parseFloat(qs('.w',s).value)||0, r=parseInt(qs('.r',s).value)||0;
+            const w = getNum(qs('.num-input[data-type="weight"] .value', s));
+            const r = getNum(qs('.num-input[data-type="reps"] .value', s));
             if(w>0&&r>0){ sets.push({weight:w,reps:r}); exVol+=w*r; exReps+=r; if(w>maxW) maxW=w; }
           });
           if(sets.length){ data.exercises.push({ superset:sup, name, sets, volume:Math.round(exVol), totalReps:exReps, maxWeight:maxW });
@@ -319,6 +407,7 @@
       data.totalVolume=Math.round(data.totalVolume);
       return data;
     }
+
     function populateFromWorkout(w){
       $blocks.innerHTML=''; blockCounter=0;
       const bySup={}; (w.exercises||[]).forEach(ex=>{ (bySup[ex.superset] ||= []).push(ex); });
@@ -460,6 +549,77 @@
         ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
     }
 
+    // Picker logic
+    const pickerModal = qs('#picker-modal');
+    const pickerList = qs('#picker-list');
+    const pickerTitle = qs('#picker-title');
+    const pickerOk = qs('#picker-ok');
+    const pickerCancel = qs('#picker-cancel');
+    let pickerTarget = null;
+
+    function openPicker(valueEl){
+      pickerTarget = valueEl;
+      const wrap = valueEl.closest('.num-input');
+      const type = wrap.dataset.type;
+      const step = parseFloat(wrap.dataset.step) || (type==='weight'?2.5:1);
+      const max = type==='weight' ? 300 : 50;
+      const title = type==='weight' ? 'Выбор веса (кг)' : 'Выбор повторов';
+      pickerTitle.textContent = title;
+
+      // Build list
+      pickerList.innerHTML = '';
+      const values=[];
+      for(let v=0; v<=max+1e-9; v+=step) values.push(type==='weight'? Math.round(v*10)/10 : Math.round(v));
+      values.forEach(v=>{
+        const item=document.createElement('div');
+        item.className='pick-item';
+        item.textContent = String(v);
+        pickerList.appendChild(item);
+      });
+
+      // Activate closest item
+      const cur = parseFloat(valueEl.textContent)||0;
+      let idx = values.findIndex(v=>v===cur);
+      if (idx<0) idx = values.findIndex(v=>v>cur); if (idx<0) idx=values.length-1;
+      activatePickerIndex(idx);
+      // Scroll to center
+      setTimeout(()=>{ pickerList.scrollTo({ top: Math.max(0, idx*40 - 80), behavior:'instant' }); }, 0);
+
+      pickerModal.classList.add('show');
+      pickerModal.setAttribute('aria-hidden', 'false');
+      if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    }
+
+    function activatePickerIndex(i){
+      qsa('.pick-item', pickerList).forEach((el,ix)=> el.classList.toggle('active', ix===i));
+    }
+
+    pickerList.addEventListener('scroll', ()=>{
+      // Highlight item closest to center line (at ~100px from top)
+      const center = pickerList.scrollTop + 100; // 40*2.5
+      const i = Math.round(center / 40);
+      activatePickerIndex(i);
+    }, { passive:true });
+
+    pickerOk.addEventListener('click', ()=>{
+      const active = qs('.pick-item.active', pickerList);
+      if (pickerTarget && active) {
+        pickerTarget.textContent = active.textContent;
+        updateStats();
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      }
+      closePicker();
+    });
+
+    pickerCancel.addEventListener('click', closePicker);
+    pickerModal.addEventListener('click', (e)=>{ if (e.target === pickerModal) closePicker(); });
+
+    function closePicker(){
+      pickerModal.classList.remove('show');
+      pickerModal.setAttribute('aria-hidden', 'true');
+      pickerTarget = null;
+    }
+
     // Events
     qs('#addSingle').addEventListener('click', ()=> addBlock('single'));
     qs('#addSuperset').addEventListener('click', ()=> addBlock('superset'));
@@ -476,7 +636,7 @@
 
     qs('#clear').addEventListener('click', ()=>{
       if(!$date.value) return tg.showAlert('Выбери дату');
-      tg.showConfirm(`Очистить тренировку за ${new Date($date.value).toLocaleDateString('ru-RU')}?`, ok=>{
+      tg.showConfirm(`Очистить тренировку за ${new Date($date.value).toLocaleDateString('ру-RU')}?`, ok=>{
         if(!ok) return;
         clearDay($date.value, ()=>{
           $blocks.innerHTML=''; blockCounter=0; addBlock('superset'); addBlock('single'); updateStats(); tg.showAlert('День очищен');
