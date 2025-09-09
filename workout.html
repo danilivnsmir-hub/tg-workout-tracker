@@ -220,12 +220,12 @@
 
   <datalist id="exercise-suggestions">
     <!-- Грудь -->
-    <option value="Жим лёжа штанга"></option>
-    <option value="Жим лёжа гантели"></option>
+    <option value="Жим лежа штанга"></option>
+    <option value="Жим лежа гантели"></option>
     <option value="Жим на наклонной скамье штанга"></option>
     <option value="Жим на наклонной скамье гантели"></option>
-    <option value="Разводка гантелей лёжа"></option>
-    <option value="Сведение рук в тренажёре (бабочка)"></option>
+    <option value="Разводка гантелей лежа"></option>
+    <option value="Сведение рук в тренажере (бабочка)"></option>
     <option value="Отжимания от пола"></option>
     <option value="Отжимания на брусьях (грудь)"></option>
     <!-- Спина -->
@@ -245,23 +245,23 @@
     <option value="Жим ногами"></option>
     <option value="Выпады с гантелями"></option>
     <option value="Болгарские сплит-приседания"></option>
-    <option value="Сгибания ног лёжа"></option>
+    <option value="Сгибания ног лежа"></option>
     <option value="Разгибания ног сидя"></option>
-    <option value="Подъём на носки стоя (икры)"></option>
-    <option value="Подъём на носки сидя (икры)"></option>
+    <option value="Подъем на носки стоя (икры)"></option>
+    <option value="Подъем на носки сидя (икры)"></option>
     <option value="Румынская тяга со штангой"></option>
     <option value="Румынская тяга с гантелями"></option>
     <!-- Плечи -->
     <option value="Жим гантелей сидя"></option>
     <option value="Жим штанги стоя"></option>
     <option value="Махи гантелями в стороны"></option>
-    <option value="Махи гантелями вперёд"></option>
+    <option value="Махи гантелями вперед"></option>
     <option value="Тяга штанги к подбородку"></option>
     <option value="Обратные махи (задняя дельта)"></option>
     <option value="Тяга каната к лицу (Face Pull)"></option>
     <!-- Руки -->
-    <option value="Подъём штанги на бицепс"></option>
-    <option value="Подъём гантелей на бицепс"></option>
+    <option value="Подъем штанги на бицепс"></option>
+    <option value="Подъем гантелей на бицепс"></option>
     <option value="Молотки с гантелями"></option>
     <option value="Французский жим штанги"></option>
     <option value="Французский жим гантели"></option>
@@ -270,7 +270,7 @@
     <!-- Пресс -->
     <option value="Скручивания на полу"></option>
     <option value="Скручивания на фитболе"></option>
-    <option value="Подъём ног в висе"></option>
+    <option value="Подъем ног в висе"></option>
     <option value="Планка"></option>
     <option value="Велосипед (пресс)"></option>
     <option value="Русский твист"></option>
@@ -627,7 +627,7 @@ function renderHistoryTab() {
   loadFromCloud(list => {
     const container = qs('#history-list');
     if (!Array.isArray(list) || !list.length) {
-      container.innerHTML = '<div class="empty">Нет сохранённых тренировок</div>';
+      container.innerHTML = '<div class="empty">Нет сохраненных тренировок</div>';
       return;
     }
     const sorted = list.slice().sort((a,b) => {
@@ -849,7 +849,7 @@ function renderStatsTab() {
   loadFromCloud(list => {
     const container = qs('#history-list');
     if (!Array.isArray(list) || !list.length) {
-      container.innerHTML = '<div class="empty">Нет сохранённых тренировок</div>';
+      container.innerHTML = '<div class="empty">Нет сохраненных тренировок</div>';
       return;
     }
     const sorted = list.slice().sort((a, b) => {
@@ -956,7 +956,7 @@ function renderStatsTab() {
             $date.value = draft.date;
             populateFromWorkout(draft);
           } else {
-            tg.showConfirm(`У тебя есть незавершённая тренировка от ${new Date(draft.date).toLocaleDateString('ru-RU')}. Продолжить её?`, ok=>{
+            tg.showConfirm(`У тебя есть незавершенная тренировка от ${new Date(draft.date).toLocaleDateString('ru-RU')}. Продолжить ее?`, ok=>{
               if(ok){
                 $date.value = draft.date;
                 populateFromWorkout(draft);
