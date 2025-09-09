@@ -471,27 +471,54 @@
     }
 
     // Data mapping
-    function collectWorkoutData(){
-      const data={ date:$date.value, exercises:[], totalVolume:0, totalReps:0, userId: tg.initDataUnsafe?.user?.id || 'local' };
-      qsa('.block').forEach((block, bi)=>{
-        const sup = bi+1;
-        qsa('.subex', block).forEach(sub=>{
-          const name = qs('input[name="exName"]', sub).value.trim();
-          if(!name) return;
-          const sets=[]; let exVol=0, exReps=0, maxW=0;
-          qsa('.set', sub).forEach(s=>{
-            const w = getNum(qs('.num-input[data-type="weight"] .value', s));
-            const r = getNum(qs('.num-input[data-type="reps"] .value', s));
-            if(w>0&&r>0){ sets.push({weight:w,reps:r}); exVol+=w*r; exReps+=r; if(w>maxW) maxW=w; }
-          });
-          if(sets.length){ data.exercises.push({ superset:sup, name, sets, volume:Math.round(exVol), totalReps:exReps, maxWeight:maxW });
-            data.totalVolume+=exVol; data.totalReps+=exReps; }
-        });
-      });
-      data.totalVolume=Math.round(data.totalVolume);
-      return data;
-    }
+ function collectWorkoutData(){
+  const data = {
+    date: $date.value,
+    exercises: [],
+    totalVolume: 0,
+    totalReps: 0,
+    userId: tg.initDataUnsafe?.user?.id || 'local'
+  };
 
+  qsa('.block').forEach((block, bi) => {
+    const sup = bi + 1;
+    qsa('.subex', block).forEach(sub => {
+      const name = qs('input[name="exName"]', sub).value.trim();
+      if (!name) return;
+
+      const sets = [];
+      let exVol = 0, exReps = 0, maxW = 0;
+
+      qsa('.set', sub).forEach(s => {
+        const w = getNum(qs('.num-input[data-type="weight"] .value', s));
+        const r = getNum(qs('.num-input[data-type="reps"] .value', s));
+        if (r > 0) { // сохраняем даже если вес = 0
+          sets.push({ weight: w, reps: r });
+          exVol += w * r;
+          exReps += r;
+          if (w > maxW) maxW = w;
+        }
+      });
+
+      if (sets.length || name) {
+        data.exercises.push({
+          superset: sup,
+          name,
+          sets,
+          volume: Math.round(exVol),
+          totalReps: exReps,
+          maxWeight: maxW
+        });
+        data.totalVolume += exVol;
+        data.totalReps += exReps;
+      }
+    });
+  });
+
+  data.totalVolume = Math.round(data.totalVolume);
+  return data;
+}
+    
     function populateFromWorkout(w){
       $blocks.innerHTML=''; blockCounter=0;
       const bySup={}; (w.exercises||[]).forEach(ex=>{ (bySup[ex.superset] ||= []).push(ex); });
