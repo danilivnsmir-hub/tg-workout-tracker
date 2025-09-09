@@ -697,7 +697,7 @@ function renderStatsTab() {
     drawProgressChart();
   });
 }
-  function drawProgressChart(){
+function drawProgressChart() {
   const sel = qs('#st-exercise-select'), name = sel?.value;
   const canvas = qs('#st-canvas'), empty = qs('#st-empty');
   const cssW = canvas.clientWidth || 600, cssH = canvas.clientHeight || 220;
@@ -705,8 +705,8 @@ function renderStatsTab() {
   canvas.width = Math.round(cssW * dpr);
   canvas.height = Math.round(cssH * dpr);
   const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,cssW,cssH);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
 
   if (!name) {
     empty.style.display = 'block';
@@ -717,12 +717,21 @@ function renderStatsTab() {
 
   const workouts = (Array.isArray(workoutsCache) ? workoutsCache : [])
     .filter(w => w.date && !isNaN(new Date(w.date)))
-    .sort((a,b) => new Date(a.date) - new Date(b.date));
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const pts = [];
   workouts.forEach(w => {
     const ex = Array.isArray(w.exercises) ? w.exercises.find(e => e.name === name) : null;
-    if (ex) pts.push({ date: new Date(w.date), value: ex.maxWeight || 0 });
+    if (ex) {
+      // Берём максимум из подходов, если они есть
+      let dayMax = 0;
+      if (Array.isArray(ex.sets) && ex.sets.length) {
+        dayMax = Math.max(...ex.sets.map(s => s.weight || 0), 0);
+      }
+      // Если подходов нет, используем maxWeight
+      if (!dayMax && ex.maxWeight) dayMax = ex.maxWeight;
+      pts.push({ date: new Date(w.date), value: dayMax });
+    }
   });
 
   if (!pts.length) {
@@ -731,46 +740,46 @@ function renderStatsTab() {
     return;
   }
 
-  const padL=40, padR=10, padT=10, padB=30, W=cssW, H=cssH, PW=W-padL-padR, PH=H-padT-padB;
-  const minV=0, maxV=Math.max(...pts.map(p=>p.value)), rangeV=Math.max(1,maxV-minV);
-  const minT=pts[0].date.getTime(), maxT=pts[pts.length-1].date.getTime(), rangeT=Math.max(1,maxT-minT);
+  const padL = 40, padR = 10, padT = 10, padB = 30, W = cssW, H = cssH, PW = W - padL - padR, PH = H - padT - padB;
+  const minV = 0, maxV = Math.max(...pts.map(p => p.value)), rangeV = Math.max(1, maxV - minV);
+  const minT = pts[0].date.getTime(), maxT = pts[pts.length - 1].date.getTime(), rangeT = Math.max(1, maxT - minT);
 
   // Оси
-  ctx.strokeStyle='#aaa'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+  ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, H - padB); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(padL, H - padB); ctx.lineTo(W - padR, H - padB); ctx.stroke();
 
   // Горизонтальные линии и подписи
-  ctx.font='12px sans-serif'; ctx.fillStyle='#666'; ctx.textAlign='right'; ctx.textBaseline='middle';
-  const ticks=4;
-  for(let i=0;i<=ticks;i++){
-    const v=minV+rangeV*i/ticks;
-    const y=padT+PH-(PH*(v-minV)/rangeV);
-    ctx.strokeStyle='#2a2f3a';
-    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
-    ctx.fillText(String(Math.round(v)), padL-6, y);
+  ctx.font = '12px sans-serif'; ctx.fillStyle = '#666'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  const ticks = 4;
+  for (let i = 0; i <= ticks; i++) {
+    const v = minV + rangeV * i / ticks;
+    const y = padT + PH - (PH * (v - minV) / rangeV);
+    ctx.strokeStyle = '#2a2f3a';
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.fillText(String(Math.round(v)), padL - 6, y);
   }
 
   // Даты
-  ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#666';
-  ctx.fillText(new Date(minT).toLocaleDateString('ru-RU'), padL, H-padB+6);
-  ctx.fillText(new Date(maxT).toLocaleDateString('ru-RU'), W-padR, H-padB+6);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#666';
+  ctx.fillText(new Date(minT).toLocaleDateString('ru-RU'), padL, H - padB + 6);
+  ctx.fillText(new Date(maxT).toLocaleDateString('ru-RU'), W - padR, H - padB + 6);
 
   // Линия
-  ctx.strokeStyle='#4f8cff'; ctx.lineWidth=2; ctx.beginPath();
-  pts.forEach((p,i)=>{
-    const x=padL+PW*((p.date.getTime()-minT)/rangeT);
-    const y=padT+PH-(PH*(p.value-minV)/rangeV);
-    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  ctx.strokeStyle = '#4f8cff'; ctx.lineWidth = 2; ctx.beginPath();
+  pts.forEach((p, i) => {
+    const x = padL + PW * ((p.date.getTime() - minT) / rangeT);
+    const y = padT + PH - (PH * (p.value - minV) / rangeV);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   });
   ctx.stroke();
 
   // Точки
-  ctx.fillStyle='#9aa4b2';
-  pts.forEach(p=>{
-    const x=padL+PW*((p.date.getTime()-minT)/rangeT);
-    const y=padT+PH-(PH*(p.value-minV)/rangeV);
-    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#9aa4b2';
+  pts.forEach(p => {
+    const x = padL + PW * ((p.date.getTime() - minT) / rangeT);
+    const y = padT + PH - (PH * (p.value - minV) / rangeV);
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
   });
 }
 
