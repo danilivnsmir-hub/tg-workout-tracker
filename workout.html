@@ -364,10 +364,9 @@
         </div>
         <div class="sets"></div>`;
       const sets = qs('.sets', sub);
-      for(let i=0;i<3;i++){
-        const wPrev = i===0 ? 0 : lastWeightInSets(sets);
-        sets.appendChild(createSet({ weight: wPrev, reps: 0 }));
-      }
+// создаём только один стартовый подход
+sets.appendChild(createSet({ weight: 0, reps: 0 }));
+
       renumberSets(sets); updateStats();
       qs('.addSet', sub).addEventListener('click', ()=>{
         const wPrev = lastWeightInSets(sets);
