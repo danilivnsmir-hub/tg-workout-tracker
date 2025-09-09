@@ -56,20 +56,25 @@
     @media (max-width:420px){ .stats{ grid-template-columns:1fr 1fr; } }
     datalist option { color:#000; }
 
-    /* Stats tab */
+    /* Shared list/cards */
     .stat-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:12px; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; }
     .card h3 { margin:0 0 8px; font-size:14px; color:var(--muted); }
     .metric { font-size:18px; font-weight:700; }
     .list { display:grid; gap:8px; }
-    .list-item { background:var(--card2); border:1px solid var(--line); border-radius:8px; padding:8px; display:flex; align-items:center; justify-content:space-between; }
+    .list-item { background:var(--card2); border:1px solid var(--line); border-radius:8px; padding:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .list-item .item-left { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; cursor:pointer; }
+    .list-item .item-left strong { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .icon-btn { background:transparent; border:1px solid var(--line); color:var(--text); width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; }
+    .empty { color:var(--muted); text-align:center; padding:16px 8px; }
+
+    /* Stats chart */
     .chart-area { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-top:12px; }
     .chart-header { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
     .chart-header select { flex:1; background:#0f1320; border:1px solid var(--line); color:var(--text); padding:8px 10px; border-radius:8px; }
     canvas { width:100%; height:220px; background:#0f1320; border:1px solid var(--line); border-radius:8px; }
-    .empty { color:var(--muted); text-align:center; padding:16px 8px; }
 
-    /* Picker modal */
+    /* Modals (picker + history summary) */
     .modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:none; align-items:flex-end; justify-content:center; z-index:20; }
     .modal.show { display:flex; }
     .sheet { width:100%; max-width:520px; background:var(--card); border-top-left-radius:16px; border-top-right-radius:16px; border:1px solid var(--line); padding:12px; }
@@ -87,6 +92,12 @@
     }
     .center-line::before { top:80px; }
     .center-line::after  { top:120px; }
+
+    /* History modal content */
+    #history-content { background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:10px; max-height:50vh; overflow:auto; }
+    #history-content .ex { margin-bottom:10px; }
+    #history-content .ex-name { font-weight:700; margin-bottom:4px; }
+    #history-content .ex-sets { font-size:13px; color:var(--muted); }
   </style>
 </head>
 <body>
@@ -103,6 +114,7 @@
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="workout">Тренировка</button>
+      <button class="tab-btn" data-tab="history">История</button>
       <button class="tab-btn" data-tab="stats">Статистика</button>
     </div>
   </header>
@@ -119,6 +131,14 @@
       <div class="hint">Тап по числу — колесо выбора. Кнопки +/- — быстрый шаг. Новый подход копирует вес предыдущего.</div>
 
       <div id="blocks" class="blocks"></div>
+    </section>
+
+    <!-- Вкладка: История -->
+    <section id="tab-history" class="tab">
+      <div class="card">
+        <h3>Прошлые тренировки</h3>
+        <div id="history-list" class="list"></div>
+      </div>
     </section>
 
     <!-- Вкладка: Статистика -->
@@ -166,6 +186,35 @@
   <div class="page-actions" id="page-actions">
     <button id="addSingle" class="ghost">+ Упражнение</button>
     <button id="addSuperset" class="ghost">+ Суперсет</button>
+  </div>
+
+  <!-- Модалка: сводка тренировки (История) -->
+  <div class="modal" id="history-modal" aria-hidden="true">
+    <div class="sheet">
+      <div class="sheet-header">
+        <div class="sheet-title" id="history-title">Тренировка</div>
+        <div class="sheet-actions-inline">
+          <button class="btn-cancel" id="history-close">Закрыть</button>
+        </div>
+      </div>
+      <div id="history-content"></div>
+    </div>
+  </div>
+
+  <!-- Picker Modal -->
+  <div class="modal" id="picker-modal" aria-hidden="true">
+    <div class="sheet">
+      <div class="sheet-header">
+        <div class="sheet-title" id="picker-title">Выбор значения</div>
+        <div class="sheet-actions-inline">
+          <button class="btn-cancel" id="picker-cancel">Отмена</button>
+          <button class="btn-ok" id="picker-ok">OK</button>
+        </div>
+      </div>
+      <div class="center-line">
+        <div class="picker" id="picker-list"></div>
+      </div>
+    </div>
   </div>
 
   <datalist id="exercise-suggestions">
@@ -247,22 +296,6 @@
     </div>
   </template>
 
-  <!-- Picker Modal -->
-  <div class="modal" id="picker-modal" aria-hidden="true">
-    <div class="sheet">
-      <div class="sheet-header">
-        <div class="sheet-title" id="picker-title">Выбор значения</div>
-        <div class="sheet-actions-inline">
-          <button class="btn-cancel" id="picker-cancel">Отмена</button>
-          <button class="btn-ok" id="picker-ok">OK</button>
-        </div>
-      </div>
-      <div class="center-line">
-        <div class="picker" id="picker-list"></div>
-      </div>
-    </div>
-  </div>
-
   <script>
     // Telegram init
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
@@ -285,9 +318,11 @@
     function switchTab(tab, btn){
       qsa('.tab-btn').forEach(b=>b.classList.remove('active')); if (btn) btn.classList.add('active');
       qsa('.tab').forEach(t=>t.classList.remove('active')); qs('#tab-'+tab).classList.add('active');
-      qs('#controls-workout').style.display = tab==='workout' ? 'flex' : 'none';
-      $pageActions.style.display = tab==='workout' ? 'flex' : 'none';
+      const showWorkoutControls = tab==='workout';
+      qs('#controls-workout').style.display = showWorkoutControls ? 'flex' : 'none';
+      $pageActions.style.display = showWorkoutControls ? 'flex' : 'none';
       if (tab==='stats') renderStatsTab();
+      if (tab==='history') renderHistoryTab();
       haptic('light');
     }
 
@@ -325,7 +360,7 @@
       const rEl = qs('.num-input[data-type="reps"] .value', s);
       setNum(wEl, v.weight != null ? v.weight : 0);
       setNum(rEl, v.reps != null ? v.reps : 0);
-      // +/-
+      // +/- handlers on this set
       s.addEventListener('click', (ev)=>{
         const btn = ev.target.closest('button');
         if (!btn) return;
@@ -342,11 +377,11 @@
         updateStats();
         haptic('light');
       });
-      // picker
+      // open picker
       qsa('.num-input .value', s).forEach(vnode=>{
         vnode.addEventListener('click', ()=> openPicker(vnode));
       });
-      // удалить сет
+      // remove set
       qs('.rm', s).addEventListener('click', ()=>{
         const parent = s.parentElement;
         s.remove(); renumberSets(parent); updateStats(); haptic('medium');
@@ -364,8 +399,8 @@
         </div>
         <div class="sets"></div>`;
       const sets = qs('.sets', sub);
-// создаём только один стартовый подход
-sets.appendChild(createSet({ weight: 0, reps: 0 }));
+      // один стартовый подход
+      sets.appendChild(createSet({ weight: 0, reps: 0 }));
 
       renumberSets(sets); updateStats();
       qs('.addSet', sub).addEventListener('click', ()=>{
@@ -473,7 +508,6 @@ sets.appendChild(createSet({ weight: 0, reps: 0 }));
         tg.CloudStorage.setItem('workouts', JSON.stringify(arr), (e)=>{
           if(e){ try{ localStorage.setItem('workouts', JSON.stringify(arr)); }catch(_){} }
           workoutsCache=arr.slice();
-          // сохраняем дату последней тренировки
           tg.CloudStorage.setItem('lastWorkoutDate', workout.date, ()=>{});
           if(cb) cb();
         });
@@ -641,7 +675,107 @@ sets.appendChild(createSet({ weight: 0, reps: 0 }));
       pickerTarget = null;
     }
 
-    // Continuation logic: init with lastWorkoutDate
+    // History tab
+    function renderHistoryTab(){
+      loadFromCloud(list=>{
+        const container = qs('#history-list');
+        if(!list || !list.length){
+          container.innerHTML = '<div class="empty">Нет сохранённых тренировок</div>';
+          return;
+        }
+        const sorted = list.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+        container.innerHTML = sorted.map(w=>{
+          const dateStr = new Date(w.date).toLocaleDateString('ru-RU');
+          const exCount = (w.exercises||[]).length;
+          const vol = Math.round(w.totalVolume||0);
+          return `
+            <div class="list-item" data-date="${escapeHtml(w.date)}">
+              <div class="item-left" data-action="summary" title="Открыть сводку">
+                <strong>${dateStr}</strong>
+                <small class="muted">Тоннаж: ${vol} кг • Упр.: ${exCount}</small>
+              </div>
+              <button class="icon-btn" data-action="edit" title="Редактировать" aria-label="Редактировать">✏️</button>
+            </div>
+          `;
+        }).join('');
+      });
+    }
+
+    function openHistorySummary(date){
+      const w = workoutsCache.find(x=>x.date===date);
+      if(!w) return;
+      qs('#history-title').textContent = new Date(w.date).toLocaleDateString('ru-RU');
+      let html = `<p>Тоннаж: ${w.totalVolume} кг<br>Повторы: ${w.totalReps}</p>`;
+      (w.exercises||[]).forEach(ex=>{
+        html += `<div class="ex">
+          <div class="ex-name">${escapeHtml(ex.name)}</div>
+          <div class="ex-sets">${(ex.sets||[]).map(s=>`${s.weight}×${s.reps}`).join(', ')}</div>
+        </div>`;
+      });
+      qs('#history-content').innerHTML = html;
+      qs('#history-modal').classList.add('show');
+      qs('#history-modal').setAttribute('aria-hidden','false');
+    }
+
+    function editWorkout(date){
+      const w = workoutsCache.find(x=>x.date===date);
+      if(!w) return;
+      $date.value = w.date;
+      populateFromWorkout(w);
+      switchTab('workout', qs('.tab-btn[data-tab="workout"]'));
+    }
+
+    // History events
+    document.addEventListener('click', e=>{
+      const list = qs('#history-list');
+      if (!list || !list.contains(e.target)) return;
+      const item = e.target.closest('.list-item');
+      if(!item) return;
+      const date = item.dataset.date;
+      if(e.target.dataset.action==='edit' || e.target.closest('[data-action="edit"]')){
+        editWorkout(date);
+      } else if(e.target.dataset.action==='summary' || e.target.closest('[data-action="summary"]')){
+        openHistorySummary(date);
+      }
+    });
+    qs('#history-close').addEventListener('click', ()=>{
+      const m = qs('#history-modal');
+      m.classList.remove('show'); m.setAttribute('aria-hidden','true');
+    });
+
+    // Events
+    qs('#addSingle').addEventListener('click', ()=> addBlock('single'));
+    qs('#addSuperset').addEventListener('click', ()=> addBlock('superset'));
+
+    qs('#save').addEventListener('click', ()=>{
+      if(!$date.value) return tg.showAlert('Выбери дату');
+      const data=collectWorkoutData();
+      if(!data.exercises.length) return tg.showAlert('Добавь хотя бы одно упражнение с подходами');
+      saveToCloud(data, ()=>{
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        tg.showPopup({ title:'Сохранено', message:`📅 ${new Date(data.date).toLocaleDateString('ru-RU')}\n⚖️ ${data.totalVolume} кг • 🔄 ${data.totalReps} повт.`, buttons:[{type:'ok'}] });
+        // после сохранения обновим историю и статистику, если вкладки открыты
+        if (qs('#tab-history').classList.contains('active')) renderHistoryTab();
+        if (qs('#tab-stats').classList.contains('active')) renderStatsTab();
+      });
+    });
+
+    qs('#clear').addEventListener('click', ()=>{
+      if(!$date.value) return tg.showAlert('Выбери дату');
+      tg.showConfirm(`Очистить тренировку за ${new Date($date.value).toLocaleDateString('ru-RU')}?`, ok=>{
+        if(!ok) return;
+        clearDay($date.value, ()=>{
+          $blocks.innerHTML=''; blockCounter=0; addBlock('superset'); addBlock('single'); updateStats(); tg.showAlert('День очищен');
+          if (qs('#tab-history').classList.contains('active')) renderHistoryTab();
+          if (qs('#tab-stats').classList.contains('active')) renderStatsTab();
+        });
+      });
+    });
+
+    $date.addEventListener('change', e=> loadForDate(e.target.value));
+    qs('#st-exercise-select').addEventListener('change', drawProgressChart);
+
+    // Init with lastWorkoutDate
     function initLoad(){
       tg.CloudStorage.getItem('lastWorkoutDate', (err, lastDate) => {
         if (lastDate) {
@@ -665,33 +799,6 @@ sets.appendChild(createSet({ weight: 0, reps: 0 }));
         }
       });
     }
-
-    // Events
-    qs('#addSingle').addEventListener('click', ()=> addBlock('single'));
-    qs('#addSuperset').addEventListener('click', ()=> addBlock('superset'));
-
-    qs('#save').addEventListener('click', ()=>{
-      if(!$date.value) return tg.showAlert('Выбери дату');
-      const data=collectWorkoutData();
-      if(!data.exercises.length) return tg.showAlert('Добавь хотя бы одно упражнение с подходами');
-      saveToCloud(data, ()=>{
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        tg.showPopup({ title:'Сохранено', message:`📅 ${new Date(data.date).toLocaleDateString('ru-RU')}\n⚖️ ${data.totalVolume} кг • 🔄 ${data.totalReps} повт.`, buttons:[{type:'ok'}] });
-      });
-    });
-
-    qs('#clear').addEventListener('click', ()=>{
-      if(!$date.value) return tg.showAlert('Выбери дату');
-      tg.showConfirm(`Очистить тренировку за ${new Date($date.value).toLocaleDateString('ru-RU')}?`, ok=>{
-        if(!ok) return;
-        clearDay($date.value, ()=>{
-          $blocks.innerHTML=''; blockCounter=0; addBlock('superset'); addBlock('single'); updateStats(); tg.showAlert('День очищен');
-        });
-      });
-    });
-
-    $date.addEventListener('change', e=> loadForDate(e.target.value));
-    qs('#st-exercise-select').addEventListener('change', drawProgressChart);
 
     // Start
     initLoad();
