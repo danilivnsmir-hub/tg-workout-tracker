@@ -553,113 +553,197 @@
         workoutsCache=[]; cb([]);
       });
     }
-    function saveToCloud(workout, cb){
-      tg.CloudStorage.getItem('workouts', (err, value)=>{
-        let arr=[]; if(value){ try{ arr=JSON.parse(value)||[]; }catch(e){ arr=[]; } }
-        else { try{ const local=localStorage.getItem('workouts'); if(local) arr=JSON.parse(local)||[]; }catch(e){} }
-        const i = arr.findIndex(w=>w.date===workout.date);
-        if(i>=0) arr[i]=workout; else arr.push(workout);
-        if(arr.length>300) arr=arr.slice(-300);
-        tg.CloudStorage.setItem('workouts', JSON.stringify(arr), (e)=>{
-          if(e){ try{ localStorage.setItem('workouts', JSON.stringify(arr)); }catch(_){} }
-          workoutsCache=arr.slice();
-          tg.CloudStorage.setItem('lastWorkoutDate', workout.date, ()=>{});
-          if(cb) cb();
-        });
-      });
-    }
-    function clearDay(dateStr, cb){
-      tg.CloudStorage.getItem('workouts', (err, value)=>{
-        let arr=[]; if(value){ try{ arr=JSON.parse(value)||[]; }catch(e){ arr=[]; } }
-        arr = arr.filter(w=>w.date!==dateStr);
-        tg.CloudStorage.setItem('workouts', JSON.stringify(arr), (e)=>{
-          if(e){ try{ localStorage.setItem('workouts', JSON.stringify(arr)); }catch(_){} }
-          workoutsCache=arr.slice(); if(cb) cb();
-        });
-      });
+function saveToCloud(workout, cb) {
+  // Проверка даты и структуры
+  if (!workout.date) {
+    console.error('Нет даты у тренировки, сохранение отменено');
+    if (cb) cb();
+    return;
+  }
+  if (!Array.isArray(workout.exercises)) workout.exercises = [];
+
+  tg.CloudStorage.getItem('workouts', (err, value) => {
+    let arr = [];
+    if (value) {
+      try { arr = JSON.parse(value) || []; } catch(e) { arr = []; }
+    } else {
+      try {
+        const local = localStorage.getItem('workouts');
+        if (local) arr = JSON.parse(local) || [];
+      } catch(e) {}
     }
 
-    // Load by date
-    function loadForDate(dateStr){
-      loadFromCloud(list=>{
-        const w = (list||[]).find(x=>x.date===dateStr);
-        if(w) populateFromWorkout(w);
-        else { $blocks.innerHTML=''; blockCounter=0; addBlock('superset'); addBlock('single'); updateStats(); }
-      });
+    const i = arr.findIndex(w => w.date === workout.date);
+    if (i >= 0) arr[i] = workout; else arr.push(workout);
+    if (arr.length > 300) arr = arr.slice(-300);
+
+    tg.CloudStorage.setItem('workouts', JSON.stringify(arr), (e) => {
+      if (e) {
+        try { localStorage.setItem('workouts', JSON.stringify(arr)); } catch(_) {}
+      }
+      workoutsCache = arr.slice();
+      tg.CloudStorage.setItem('lastWorkoutDate', workout.date, ()=>{});
+      if (cb) cb();
+    });
+  });
+}
+
+function clearDay(dateStr, cb) {
+  tg.CloudStorage.getItem('workouts', (err, value) => {
+    let arr = [];
+    if (value) {
+      try { arr = JSON.parse(value) || []; } catch(e) { arr = []; }
     }
+    arr = arr.filter(w => w.date !== dateStr);
+    tg.CloudStorage.setItem('workouts', JSON.stringify(arr), (e) => {
+      if (e) {
+        try { localStorage.setItem('workouts', JSON.stringify(arr)); } catch(_) {}
+      }
+      workoutsCache = arr.slice();
+      if (cb) cb();
+    });
+  });
+}
 
-    // Stats tab
-    function renderStatsTab(){
-      loadFromCloud(list=>{
-        const workouts=(list||[]).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
-        const total = workouts.length;
-        const totalVol = workouts.reduce((s,w)=>s+(w.totalVolume||0),0);
-        const avgVol = total ? Math.round(totalVol/total) : 0;
-        const bestVol = workouts.reduce((m,w)=>Math.max(m,w.totalVolume||0),0);
-        qs('#st-total-workouts').textContent = total;
-        qs('#st-total-volume').textContent = `${Math.round(totalVol)} кг`;
-        qs('#st-avg-volume').textContent = `${avgVol} кг`;
-        qs('#st-best-volume').textContent = `${Math.round(bestVol)} кг`;
-
-        const exCount={}, records={};
-        workouts.forEach(w=> (w.exercises||[]).forEach(ex=>{
-          exCount[ex.name]=(exCount[ex.name]||0)+1;
-          records[ex.name]=Math.max(records[ex.name]||0, ex.maxWeight||0);
-        }));
-        const top = Object.entries(exCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
-        qs('#st-top-exercises').innerHTML = top.length ? top.map(([n,c])=>`
-          <div class="list-item"><span>${escapeHtml(n)}</span><span>${c} раз</span></div>`).join('') : '<div class="empty">Пока нет данных</div>';
-        const recs = Object.entries(records).sort((a,b)=>b[1]-a[1]);
-        qs('#st-records').innerHTML = recs.length ? recs.map(([n,w])=>`
-          <div class="list-item"><span>${escapeHtml(n)}</span><span>🏆 ${w} кг</span></div>`).join('') : '<div class="empty">Пока нет данных</div>';
-
-        const names = Array.from(new Set(workouts.flatMap(w=>(w.exercises||[]).map(ex=>ex.name)))).sort();
-        const sel = qs('#st-exercise-select'); const prev=sel.value;
-        sel.innerHTML = names.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-        sel.value = (prev && names.includes(prev)) ? prev : (names[0]||'');
-        drawProgressChart();
-      });
+function loadForDate(dateStr) {
+  loadFromCloud(list => {
+    if (!Array.isArray(list)) list = [];
+    const w = list.find(x => x.date === dateStr);
+    if (w) {
+      if (!Array.isArray(w.exercises)) w.exercises = [];
+      populateFromWorkout(w);
+    } else {
+      $blocks.innerHTML = '';
+      blockCounter = 0;
+      addBlock('superset');
+      addBlock('single');
+      updateStats();
     }
+  });
+}
 
-    function drawProgressChart(){
-      const sel=qs('#st-exercise-select'), name=sel.value;
-      const canvas=qs('#st-canvas'), empty=qs('#st-empty');
-      const cssW=canvas.clientWidth||600, cssH=canvas.clientHeight||220;
-      const dpr=window.devicePixelRatio||1; canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
-      const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
+function renderStatsTab() {
+  loadFromCloud(list => {
+    if (!Array.isArray(list)) list = [];
 
-      if(!name){ empty.style.display='block'; empty.textContent='Выберите упражнение'; return; }
-      empty.style.display='none';
+    const workouts = list.slice().sort((a,b) => {
+      const da = new Date(a.date), db = new Date(b.date);
+      return isNaN(da) || isNaN(db) ? 0 : da - db;
+    });
 
-      const workouts = workoutsCache.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
-      const pts=[]; workouts.forEach(w=>{ const ex=(w.exercises||[]).find(e=>e.name===name); if(ex) pts.push({date:new Date(w.date), value:ex.maxWeight||0}); });
-      if(!pts.length){ empty.style.display='block'; empty.textContent='Нет данных для выбранного упражнения'; return; }
+    const total = workouts.length;
+    const totalVol = workouts.reduce((s,w) => s + (w.totalVolume || 0), 0);
+    const avgVol = total ? Math.round(totalVol / total) : 0;
+    const bestVol = workouts.reduce((m,w) => Math.max(m, w.totalVolume || 0), 0);
 
-      const padL=40, padR=10, padT=10, padB=30, W=cssW, H=cssH, PW=W-padL-padR, PH=H-padT-padB;
-      const minV=0, maxV=Math.max(...pts.map(p=>p.value)), rangeV=Math.max(1,maxV-minV);
-      const minT=pts[0].date.getTime(), maxT=pts[pts.length-1].date.getTime(), rangeT=Math.max(1,maxT-minT);
+    qs('#st-total-workouts').textContent = total;
+    qs('#st-total-volume').textContent = `${Math.round(totalVol)} кг`;
+    qs('#st-avg-volume').textContent = `${avgVol} кг`;
+    qs('#st-best-volume').textContent = `${Math.round(bestVol)} кг`;
 
-      ctx.strokeStyle='#aaa'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+    const exCount = {}, records = {};
+    workouts.forEach(w => (Array.isArray(w.exercises) ? w.exercises : []).forEach(ex => {
+      exCount[ex.name] = (exCount[ex.name] || 0) + 1;
+      records[ex.name] = Math.max(records[ex.name] || 0, ex.maxWeight || 0);
+    }));
 
-      ctx.font='12px sans-serif'; ctx.fillStyle='#666'; ctx.textAlign='right'; ctx.textBaseline='middle';
-      const ticks=4; for(let i=0;i<=ticks;i++){ const v=minV+rangeV*i/ticks; const y=padT+PH-(PH*(v-minV)/rangeV);
-        ctx.strokeStyle='#2a2f3a'; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke(); ctx.fillText(String(Math.round(v)), padL-6, y); }
+    const top = Object.entries(exCount).sort((a,b) => b[1] - a[1]).slice(0,10);
+    qs('#st-top-exercises').innerHTML = top.length
+      ? top.map(([n,c]) => `<div class="list-item"><span>${escapeHtml(n)}</span><span>${c} раз</span></div>`).join('')
+      : '<div class="empty">Пока нет данных</div>';
 
-      ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#666';
-      const first=new Date(minT).toLocaleDateString('ru-RU'), last=new Date(maxT).toLocaleDateString('ru-RU');
-      ctx.fillText(first, padL, H-padB+6); ctx.fillText(last, W-padR, H-padB+6);
+    const recs = Object.entries(records).sort((a,b) => b[1] - a[1]);
+    qs('#st-records').innerHTML = recs.length
+      ? recs.map(([n,w]) => `<div class="list-item"><span>${escapeHtml(n)}</span><span>🏆 ${w} кг</span></div>`).join('')
+      : '<div class="empty">Пока нет данных</div>';
 
-      ctx.strokeStyle='#4f8cff'; ctx.lineWidth=2; ctx.beginPath();
-      pts.forEach((p,i)=>{ const x=padL+PW*((p.date.getTime()-minT)/rangeT); const y=padT+PH-(PH*(p.value-minV)/rangeV);
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
-      ctx.stroke();
+    const names = Array.from(new Set(workouts.flatMap(w =>
+      Array.isArray(w.exercises) ? w.exercises.map(ex => ex.name) : []
+    ))).sort();
 
-      ctx.fillStyle='#9aa4b2';
-      pts.forEach(p=>{ const x=padL+PW*((p.date.getTime()-minT)/rangeT); const y=padT+PH-(PH*(p.value-minV)/rangeV);
-        ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
-    }
+    const sel = qs('#st-exercise-select');
+    const prev = sel.value;
+    sel.innerHTML = names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    sel.value = (prev && names.includes(prev)) ? prev : (names[0] || '');
+    drawProgressChart();
+  });
+}
+  function drawProgressChart(){
+  const sel = qs('#st-exercise-select'), name = sel?.value;
+  const canvas = qs('#st-canvas'), empty = qs('#st-empty');
+  const cssW = canvas.clientWidth || 600, cssH = canvas.clientHeight || 220;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);
+
+  if (!name) {
+    empty.style.display = 'block';
+    empty.textContent = 'Выберите упражнение';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const workouts = (Array.isArray(workoutsCache) ? workoutsCache : [])
+    .filter(w => w.date && !isNaN(new Date(w.date)))
+    .sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  const pts = [];
+  workouts.forEach(w => {
+    const ex = Array.isArray(w.exercises) ? w.exercises.find(e => e.name === name) : null;
+    if (ex) pts.push({ date: new Date(w.date), value: ex.maxWeight || 0 });
+  });
+
+  if (!pts.length) {
+    empty.style.display = 'block';
+    empty.textContent = 'Нет данных для выбранного упражнения';
+    return;
+  }
+
+  const padL=40, padR=10, padT=10, padB=30, W=cssW, H=cssH, PW=W-padL-padR, PH=H-padT-padB;
+  const minV=0, maxV=Math.max(...pts.map(p=>p.value)), rangeV=Math.max(1,maxV-minV);
+  const minT=pts[0].date.getTime(), maxT=pts[pts.length-1].date.getTime(), rangeT=Math.max(1,maxT-minT);
+
+  // Оси
+  ctx.strokeStyle='#aaa'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+
+  // Горизонтальные линии и подписи
+  ctx.font='12px sans-serif'; ctx.fillStyle='#666'; ctx.textAlign='right'; ctx.textBaseline='middle';
+  const ticks=4;
+  for(let i=0;i<=ticks;i++){
+    const v=minV+rangeV*i/ticks;
+    const y=padT+PH-(PH*(v-minV)/rangeV);
+    ctx.strokeStyle='#2a2f3a';
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
+    ctx.fillText(String(Math.round(v)), padL-6, y);
+  }
+
+  // Даты
+  ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#666';
+  ctx.fillText(new Date(minT).toLocaleDateString('ru-RU'), padL, H-padB+6);
+  ctx.fillText(new Date(maxT).toLocaleDateString('ru-RU'), W-padR, H-padB+6);
+
+  // Линия
+  ctx.strokeStyle='#4f8cff'; ctx.lineWidth=2; ctx.beginPath();
+  pts.forEach((p,i)=>{
+    const x=padL+PW*((p.date.getTime()-minT)/rangeT);
+    const y=padT+PH-(PH*(p.value-minV)/rangeV);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Точки
+  ctx.fillStyle='#9aa4b2';
+  pts.forEach(p=>{
+    const x=padL+PW*((p.date.getTime()-minT)/rangeT);
+    const y=padT+PH-(PH*(p.value-minV)/rangeV);
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+  });
+}
 
     // Picker logic
     const pickerModal = qs('#picker-modal');
@@ -732,30 +816,33 @@
     }
 
     // History tab
-    function renderHistoryTab(){
-      loadFromCloud(list=>{
-        const container = qs('#history-list');
-        if(!list || !list.length){
-          container.innerHTML = '<div class="empty">Нет сохранённых тренировок</div>';
-          return;
-        }
-        const sorted = list.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
-        container.innerHTML = sorted.map(w=>{
-          const dateStr = new Date(w.date).toLocaleDateString('ru-RU');
-          const exCount = (w.exercises||[]).length;
-          const vol = Math.round(w.totalVolume||0);
-          return `
-            <div class="list-item" data-date="${escapeHtml(w.date)}">
-              <div class="item-left" data-action="summary" title="Открыть сводку">
-                <strong>${dateStr}</strong>
-                <small class="muted">Тоннаж: ${vol} кг • Упр.: ${exCount}</small>
-              </div>
-              <button class="icon-btn" data-action="edit" title="Редактировать" aria-label="Редактировать">✏️</button>
-            </div>
-          `;
-        }).join('');
-      });
+ function renderHistoryTab() {
+  loadFromCloud(list => {
+    const container = qs('#history-list');
+    if (!Array.isArray(list) || !list.length) {
+      container.innerHTML = '<div class="empty">Нет сохранённых тренировок</div>';
+      return;
     }
+    const sorted = list.slice().sort((a, b) => {
+      const da = new Date(a.date), db = new Date(b.date);
+      return isNaN(db) || isNaN(da) ? 0 : db - da;
+    });
+    container.innerHTML = sorted.map(w => {
+      const dateStr = w.date ? new Date(w.date).toLocaleDateString('ru-RU') : '—';
+      const exCount = Array.isArray(w.exercises) ? w.exercises.length : 0;
+      const vol = Math.round(w.totalVolume || 0);
+      return `
+        <div class="list-item" data-date="${escapeHtml(w.date || '')}">
+          <div class="item-left" data-action="summary" title="Открыть сводку">
+            <strong>${dateStr}</strong>
+            <small class="muted">Тоннаж: ${vol} кг • Упр.: ${exCount}</small>
+          </div>
+          <button class="icon-btn" data-action="edit" title="Редактировать" aria-label="Редактировать">✏️</button>
+        </div>
+      `;
+    }).join('');
+  });
+}
 
     function openHistorySummary(date){
       const w = workoutsCache.find(x=>x.date===date);
