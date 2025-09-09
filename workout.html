@@ -85,8 +85,8 @@
     .center-line::before, .center-line::after {
       content:""; position:absolute; left:10px; right:10px; height:0; border-top:1px dashed #334155;
     }
-    .center-line::before { top:80px; } /* 40px * 2 */
-    .center-line::after  { top:120px; } /* 40px * 3 */
+    .center-line::before { top:80px; }
+    .center-line::after  { top:120px; }
   </style>
 </head>
 <body>
@@ -325,11 +325,11 @@
       const rEl = qs('.num-input[data-type="reps"] .value', s);
       setNum(wEl, v.weight != null ? v.weight : 0);
       setNum(rEl, v.reps != null ? v.reps : 0);
-      // plus/minus (делегирование на конкретный set)
+      // +/-
       s.addEventListener('click', (ev)=>{
         const btn = ev.target.closest('button');
         if (!btn) return;
-        if (btn.classList.contains('rm')) return; // отдельный обработчик ниже
+        if (btn.classList.contains('rm')) return;
         const wrap = btn.closest('.num-input');
         if (!wrap) return;
         const valEl = qs('.value', wrap);
@@ -337,18 +337,16 @@
         let val = getNum(valEl);
         if (btn.classList.contains('plus')) val += step;
         if (btn.classList.contains('minus')) val = Math.max(0, val - step);
-        // округление
-        if (wrap.dataset.type==='weight') val = Math.round(val*10)/10;
-        else val = Math.round(val);
+        if (wrap.dataset.type==='weight') val = Math.round(val*10)/10; else val = Math.round(val);
         setNum(valEl, val);
         updateStats();
         haptic('light');
       });
-      // открыть колесо выбора по тапу на число
+      // picker
       qsa('.num-input .value', s).forEach(vnode=>{
         vnode.addEventListener('click', ()=> openPicker(vnode));
       });
-      // удаление подхода
+      // удалить сет
       qs('.rm', s).addEventListener('click', ()=>{
         const parent = s.parentElement;
         s.remove(); renumberSets(parent); updateStats(); haptic('medium');
@@ -366,7 +364,6 @@
         </div>
         <div class="sets"></div>`;
       const sets = qs('.sets', sub);
-      // стартовые 3 подхода: второй и третий копируют вес предыдущего (когда появится)
       for(let i=0;i<3;i++){
         const wPrev = i===0 ? 0 : lastWeightInSets(sets);
         sets.appendChild(createSet({ weight: wPrev, reps: 0 }));
@@ -441,7 +438,7 @@
       keys.forEach(k=>{
         const group=bySup[k]; const type = group.length>=2 ? 'superset' : 'single';
         addBlock(type);
-        const block = qsa('.block').slice(-1)[0];
+        const block = qsa('.block')[qsa('.block').length-1];
         const subs = qsa('.subex', block);
         group.forEach((ex,i)=>{
           const sub = subs[i] || subs[0];
@@ -457,8 +454,13 @@
     // CloudStorage
     function loadFromCloud(cb){
       tg.CloudStorage.getItem('workouts', (err, value)=>{
-        if(err){ try{ const local=localStorage.getItem('workouts'); if(local){ const arr=JSON.parse(local); workoutsCache=arr.slice(); return cb(arr); } }catch(e){} workoutsCache=[]; return cb([]); }
-        if(value){ try{ const arr=JSON.parse(value)||[]; workoutsCache=arr.slice(); return cb(arr); }catch(e){ workoutsCache=[]; return cb([]); } }
+        if(err){
+          try{ const local=localStorage.getItem('workouts'); if(local){ const arr=JSON.parse(local); workoutsCache=arr.slice(); return cb(arr); } }catch(e){}
+          workoutsCache=[]; return cb([]);
+        }
+        if(value){
+          try{ const arr=JSON.parse(value)||[]; workoutsCache=arr.slice(); return cb(arr); }catch(e){ workoutsCache=[]; return cb([]); }
+        }
         workoutsCache=[]; cb([]);
       });
     }
@@ -471,7 +473,10 @@
         if(arr.length>300) arr=arr.slice(-300);
         tg.CloudStorage.setItem('workouts', JSON.stringify(arr), (e)=>{
           if(e){ try{ localStorage.setItem('workouts', JSON.stringify(arr)); }catch(_){} }
-          workoutsCache=arr.slice(); if(cb) cb();
+          workoutsCache=arr.slice();
+          // сохраняем дату последней тренировки
+          tg.CloudStorage.setItem('lastWorkoutDate', workout.date, ()=>{});
+          if(cb) cb();
         });
       });
     }
@@ -531,7 +536,6 @@
     function drawProgressChart(){
       const sel=qs('#st-exercise-select'), name=sel.value;
       const canvas=qs('#st-canvas'), empty=qs('#st-empty');
-      // retina
       const cssW=canvas.clientWidth||600, cssH=canvas.clientHeight||220;
       const dpr=window.devicePixelRatio||1; canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
       const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
@@ -547,34 +551,29 @@
       const minV=0, maxV=Math.max(...pts.map(p=>p.value)), rangeV=Math.max(1,maxV-minV);
       const minT=pts[0].date.getTime(), maxT=pts[pts.length-1].date.getTime(), rangeT=Math.max(1,maxT-minT);
 
-      // axes
       ctx.strokeStyle='#aaa'; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
 
-      // grid Y
       ctx.font='12px sans-serif'; ctx.fillStyle='#666'; ctx.textAlign='right'; ctx.textBaseline='middle';
       const ticks=4; for(let i=0;i<=ticks;i++){ const v=minV+rangeV*i/ticks; const y=padT+PH-(PH*(v-minV)/rangeV);
         ctx.strokeStyle='#2a2f3a'; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke(); ctx.fillText(String(Math.round(v)), padL-6, y); }
 
-      // labels X
       ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#666';
       const first=new Date(minT).toLocaleDateString('ru-RU'), last=new Date(maxT).toLocaleDateString('ru-RU');
       ctx.fillText(first, padL, H-padB+6); ctx.fillText(last, W-padR, H-padB+6);
 
-      // line
       ctx.strokeStyle='#4f8cff'; ctx.lineWidth=2; ctx.beginPath();
       pts.forEach((p,i)=>{ const x=padL+PW*((p.date.getTime()-minT)/rangeT); const y=padT+PH-(PH*(p.value-minV)/rangeV);
         if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
       ctx.stroke();
 
-      // points
       ctx.fillStyle='#9aa4b2';
       pts.forEach(p=>{ const x=padL+PW*((p.date.getTime()-minT)/rangeT); const y=padT+PH-(PH*(p.value-minV)/rangeV);
         ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
     }
 
-    // Picker logic (фикс «+1 шаг» и перенос OK в шапку)
+    // Picker logic
     const pickerModal = qs('#picker-modal');
     const pickerList = qs('#picker-list');
     const pickerTitle = qs('#picker-title');
@@ -582,7 +581,7 @@
     const pickerCancel = qs('#picker-cancel');
     let pickerTarget = null;
     const ITEM_H = 40;
-    const CENTER_OFFSET = 80; // смещение до линии центра (между 2-й и 3-й ячейкой из 5 видимых)
+    const CENTER_OFFSET = 80;
 
     function openPicker(valueEl){
       pickerTarget = valueEl;
@@ -593,7 +592,6 @@
       const title = type==='weight' ? 'Выбор веса (кг)' : 'Выбор повторов';
       pickerTitle.textContent = title;
 
-      // Build list
       pickerList.innerHTML = '';
       const values=[];
       for(let v=0; v<=max+1e-9; v+=step) values.push(type==='weight'? Math.round(v*10)/10 : Math.round(v));
@@ -604,13 +602,11 @@
         pickerList.appendChild(item);
       });
 
-      // Активируем ближайшее к текущему
       const cur = parseFloat(valueEl.textContent)||0;
       let idx = Math.round(cur / step);
       if (idx < 0) idx = 0;
       if (idx > values.length - 1) idx = values.length - 1;
       activatePickerIndex(idx);
-      // Центруем
       setTimeout(()=>{ pickerList.scrollTo({ top: Math.max(0, idx*ITEM_H - CENTER_OFFSET), behavior:'instant' }); }, 0);
 
       pickerModal.classList.add('show');
@@ -623,9 +619,6 @@
     }
 
     pickerList.addEventListener('scroll', ()=>{
-      // Центр списка — scrollTop + 100px; ближайший центр элемента в i*40 + 20
-      // => i ≈ (scrollTop + 80) / 40
-      const center = pickerList.scrollTop + 100;
       const i = Math.round((pickerList.scrollTop + 80) / ITEM_H);
       activatePickerIndex(Math.max(0, i));
     }, { passive:true });
@@ -647,6 +640,31 @@
       pickerModal.classList.remove('show');
       pickerModal.setAttribute('aria-hidden', 'true');
       pickerTarget = null;
+    }
+
+    // Continuation logic: init with lastWorkoutDate
+    function initLoad(){
+      tg.CloudStorage.getItem('lastWorkoutDate', (err, lastDate) => {
+        if (lastDate) {
+          if (lastDate === todayISO()) {
+            $date.value = lastDate;
+            loadForDate(lastDate);
+          } else {
+            tg.showConfirm(`Продолжить тренировку от ${new Date(lastDate).toLocaleDateString('ru-RU')}?`, ok => {
+              if (ok) {
+                $date.value = lastDate;
+                loadForDate(lastDate);
+              } else {
+                $date.value = todayISO();
+                loadForDate($date.value);
+              }
+            });
+          }
+        } else {
+          $date.value = todayISO();
+          loadForDate($date.value);
+        }
+      });
     }
 
     // Events
@@ -676,9 +694,8 @@
     $date.addEventListener('change', e=> loadForDate(e.target.value));
     qs('#st-exercise-select').addEventListener('change', drawProgressChart);
 
-    // Init
-    $date.value = todayISO();
-    loadForDate($date.value);
+    // Start
+    initLoad();
   </script>
 </body>
 </html>
