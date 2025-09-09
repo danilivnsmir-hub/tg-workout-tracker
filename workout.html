@@ -21,7 +21,7 @@
     button.ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
     button.danger { background:var(--danger); }
     main { padding:12px; }
-    .tabs { margin-top:10px; display:flex; gap:8px; }
+    .tabs { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
     .tab-btn { background:transparent; border:1px solid var(--line); color:var(--text); padding:8px 12px; border-radius:999px; font-weight:600; cursor:pointer; }
     .tab-btn.active { background:var(--acc); border-color:var(--acc); }
     .tab { display:none; } .tab.active { display:block; }
@@ -53,6 +53,7 @@
 
     .page-actions { display:flex; gap:8px; position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--line); padding:8px 12px; z-index:9; }
     .page-actions button { flex:1; }
+
     @media (max-width:420px){ .stats{ grid-template-columns:1fr 1fr; } }
     datalist option { color:#000; }
 
@@ -313,6 +314,21 @@
     function todayISO(){ const d=new Date(), off=d.getTimezoneOffset()*60000; return new Date(Date.now()-off).toISOString().slice(0,10); }
     function haptic(type='light'){ if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(type); }
 
+    // Draft helpers
+    function saveDraft(){
+      const draft = collectWorkoutData();
+      // Сохраняем черновик и дату последней активности
+      tg.CloudStorage.setItem('draftWorkout', JSON.stringify(draft), ()=>{});
+      tg.CloudStorage.setItem('lastWorkoutDate', $date.value, ()=>{});
+    }
+    function clearDraft(){ tg.CloudStorage.removeItem('draftWorkout', ()=>{}); }
+    function loadDraft(cb){
+      tg.CloudStorage.getItem('draftWorkout', (err, val)=>{
+        if(val){ try { cb(JSON.parse(val)); } catch(e){ cb(null); } }
+        else cb(null);
+      });
+    }
+
     // Tabs
     qsa('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn)));
     function switchTab(tab, btn){
@@ -360,6 +376,7 @@
       const rEl = qs('.num-input[data-type="reps"] .value', s);
       setNum(wEl, v.weight != null ? v.weight : 0);
       setNum(rEl, v.reps != null ? v.reps : 0);
+
       // +/- handlers on this set
       s.addEventListener('click', (ev)=>{
         const btn = ev.target.closest('button');
@@ -375,17 +392,21 @@
         if (wrap.dataset.type==='weight') val = Math.round(val*10)/10; else val = Math.round(val);
         setNum(valEl, val);
         updateStats();
+        saveDraft();
         haptic('light');
       });
+
       // open picker
       qsa('.num-input .value', s).forEach(vnode=>{
         vnode.addEventListener('click', ()=> openPicker(vnode));
       });
+
       // remove set
       qs('.rm', s).addEventListener('click', ()=>{
         const parent = s.parentElement;
-        s.remove(); renumberSets(parent); updateStats(); haptic('medium');
+        s.remove(); renumberSets(parent); updateStats(); saveDraft(); haptic('medium');
       });
+
       updateStats();
       return s;
     }
@@ -402,11 +423,17 @@
       // один стартовый подход
       sets.appendChild(createSet({ weight: 0, reps: 0 }));
 
+      const exInput = qs('input[name="exName"]', sub);
+      exInput.addEventListener('change', () => {
+        exInput.blur(); // закрываем клавиатуру после выбора из списка
+        saveDraft();
+      });
+
       renumberSets(sets); updateStats();
       qs('.addSet', sub).addEventListener('click', ()=>{
         const wPrev = lastWeightInSets(sets);
         sets.appendChild(createSet({ weight: wPrev, reps: 0 }));
-        renumberSets(sets); updateStats(); haptic('light');
+        renumberSets(sets); updateStats(); saveDraft(); haptic('light');
       });
       return sub;
     }
@@ -424,7 +451,8 @@
         </div>`;
       if(type==='superset'){ b.appendChild(subExerciseTemplate('Упражнение 1')); b.appendChild(subExerciseTemplate('Упражнение 2')); }
       else { b.appendChild(subExerciseTemplate('Упражнение')); }
-      qs('.removeBlock', b).addEventListener('click', ()=>{ b.remove(); renumberBlocks(); updateStats(); haptic('medium'); });
+
+      qs('.removeBlock', b).addEventListener('click', ()=>{ b.remove(); renumberBlocks(); updateStats(); saveDraft(); haptic('medium'); });
       qs('.addSetAll', b).addEventListener('click', ()=>{
         qsa('.subex', b).forEach(se=>{
           const sets = qs('.sets', se);
@@ -432,9 +460,9 @@
           sets.appendChild(createSet({ weight: wPrev, reps: 0 }));
           renumberSets(sets);
         });
-        updateStats(); haptic('light');
+        updateStats(); saveDraft(); haptic('light');
       });
-      $blocks.appendChild(b); haptic('light');
+      $blocks.appendChild(b); saveDraft(); haptic('light');
     }
 
     function renumberBlocks(){
@@ -485,7 +513,7 @@
       updateStats();
     }
 
-    // CloudStorage
+    // CloudStorage persistent
     function loadFromCloud(cb){
       tg.CloudStorage.getItem('workouts', (err, value)=>{
         if(err){
@@ -524,7 +552,7 @@
       });
     }
 
-    // Load for date
+    // Load by date
     function loadForDate(dateStr){
       loadFromCloud(list=>{
         const w = (list||[]).find(x=>x.date===dateStr);
@@ -661,6 +689,7 @@
       if (pickerTarget && active) {
         pickerTarget.textContent = active.textContent;
         updateStats();
+        saveDraft();
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
       }
       closePicker();
@@ -725,7 +754,7 @@
       switchTab('workout', qs('.tab-btn[data-tab="workout"]'));
     }
 
-    // History events
+    // Delegated clicks for history
     document.addEventListener('click', e=>{
       const list = qs('#history-list');
       if (!list || !list.contains(e.target)) return;
@@ -744,17 +773,17 @@
     });
 
     // Events
-    qs('#addSingle').addEventListener('click', ()=> addBlock('single'));
-    qs('#addSuperset').addEventListener('click', ()=> addBlock('superset'));
+    qs('#addSingle').addEventListener('click', ()=>{ addBlock('single'); saveDraft(); });
+    qs('#addSuperset').addEventListener('click', ()=>{ addBlock('superset'); saveDraft(); });
 
     qs('#save').addEventListener('click', ()=>{
       if(!$date.value) return tg.showAlert('Выбери дату');
       const data=collectWorkoutData();
       if(!data.exercises.length) return tg.showAlert('Добавь хотя бы одно упражнение с подходами');
       saveToCloud(data, ()=>{
+        clearDraft();
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         tg.showPopup({ title:'Сохранено', message:`📅 ${new Date(data.date).toLocaleDateString('ru-RU')}\n⚖️ ${data.totalVolume} кг • 🔄 ${data.totalReps} повт.`, buttons:[{type:'ok'}] });
-        // после сохранения обновим историю и статистику, если вкладки открыты
         if (qs('#tab-history').classList.contains('active')) renderHistoryTab();
         if (qs('#tab-stats').classList.contains('active')) renderStatsTab();
       });
@@ -765,6 +794,7 @@
       tg.showConfirm(`Очистить тренировку за ${new Date($date.value).toLocaleDateString('ru-RU')}?`, ok=>{
         if(!ok) return;
         clearDay($date.value, ()=>{
+          clearDraft();
           $blocks.innerHTML=''; blockCounter=0; addBlock('superset'); addBlock('single'); updateStats(); tg.showAlert('День очищен');
           if (qs('#tab-history').classList.contains('active')) renderHistoryTab();
           if (qs('#tab-stats').classList.contains('active')) renderStatsTab();
@@ -772,30 +802,50 @@
       });
     });
 
-    $date.addEventListener('change', e=> loadForDate(e.target.value));
+    $date.addEventListener('change', e=>{ loadForDate(e.target.value); saveDraft(); });
     qs('#st-exercise-select').addEventListener('change', drawProgressChart);
 
-    // Init with lastWorkoutDate
+    // Init with draft-first logic (Variant 1)
     function initLoad(){
-      tg.CloudStorage.getItem('lastWorkoutDate', (err, lastDate) => {
-        if (lastDate) {
-          if (lastDate === todayISO()) {
-            $date.value = lastDate;
-            loadForDate(lastDate);
+      loadDraft(draft=>{
+        if(draft){
+          if(draft.date === todayISO()){
+            $date.value = draft.date;
+            populateFromWorkout(draft);
           } else {
-            tg.showConfirm(`Продолжить тренировку от ${new Date(lastDate).toLocaleDateString('ru-RU')}?`, ok => {
-              if (ok) {
-                $date.value = lastDate;
-                loadForDate(lastDate);
+            tg.showConfirm(`У тебя есть незавершённая тренировка от ${new Date(draft.date).toLocaleDateString('ru-RU')}. Продолжить её?`, ok=>{
+              if(ok){
+                $date.value = draft.date;
+                populateFromWorkout(draft);
               } else {
+                clearDraft();
                 $date.value = todayISO();
                 loadForDate($date.value);
               }
             });
           }
         } else {
-          $date.value = todayISO();
-          loadForDate($date.value);
+          tg.CloudStorage.getItem('lastWorkoutDate', (err, lastDate) => {
+            if (lastDate) {
+              if (lastDate === todayISO()) {
+                $date.value = lastDate;
+                loadForDate(lastDate);
+              } else {
+                tg.showConfirm(`Продолжить тренировку от ${new Date(lastDate).toLocaleDateString('ru-RU')}?`, ok => {
+                  if (ok) {
+                    $date.value = lastDate;
+                    loadForDate(lastDate);
+                  } else {
+                    $date.value = todayISO();
+                    loadForDate($date.value);
+                  }
+                });
+              }
+            } else {
+              $date.value = todayISO();
+              loadForDate($date.value);
+            }
+          });
         }
       });
     }
