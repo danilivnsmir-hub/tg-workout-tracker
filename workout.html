@@ -554,12 +554,13 @@
       });
     }
 function saveToCloud(workout, cb) {
-  // Проверка даты и структуры
+  // Приводим дату к формату YYYY-MM-DD
   if (!workout.date) {
     console.error('Нет даты у тренировки, сохранение отменено');
     if (cb) cb();
     return;
   }
+  workout.date = workout.date.trim();
   if (!Array.isArray(workout.exercises)) workout.exercises = [];
 
   tg.CloudStorage.getItem('workouts', (err, value) => {
@@ -619,6 +620,34 @@ function loadForDate(dateStr) {
       addBlock('single');
       updateStats();
     }
+  });
+}
+
+function renderHistoryTab() {
+  loadFromCloud(list => {
+    const container = qs('#history-list');
+    if (!Array.isArray(list) || !list.length) {
+      container.innerHTML = '<div class="empty">Нет сохранённых тренировок</div>';
+      return;
+    }
+    const sorted = list.slice().sort((a,b) => {
+      const da = new Date(a.date), db = new Date(b.date);
+      return isNaN(db) || isNaN(da) ? 0 : db - da;
+    });
+    container.innerHTML = sorted.map(w => {
+      const dateStr = w.date ? new Date(w.date).toLocaleDateString('ru-RU') : '—';
+      const exCount = Array.isArray(w.exercises) ? w.exercises.length : 0;
+      const vol = Math.round(w.totalVolume || 0);
+      return `
+        <div class="list-item" data-date="${escapeHtml(w.date || '')}">
+          <div class="item-left" data-action="summary" title="Открыть сводку">
+            <strong>${dateStr}</strong>
+            <small class="muted">Тоннаж: ${vol} кг • Упр.: ${exCount}</small>
+          </div>
+          <button class="icon-btn" data-action="edit" title="Редактировать" aria-label="Редактировать">✏️</button>
+        </div>
+      `;
+    }).join('');
   });
 }
 
