@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Трекер тренировок</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    /* CSS Variables */
+    :root {
+      --bg: #0f1115;
+      --card: #171a21;
+      --card2: #131720;
+      --text: #e6e9ef;
+      --muted: #9aa4b2;
+      --line: #2a2f3a;
+      --acc: #4f8cff;
+      --danger: #ef4444;
+      --ok: #22c55e;
+      --input-bg: #0f1320;
+      
+      --spacing-xs: 6px;
+      --spacing-sm: 8px;
+      --spacing-md: 12px;
+      --spacing-lg: 16px;
+      
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      
+      --header-height: 60px;
+      --footer-height: 84px;
+      --modal-max-width: 520px;
+    }
+
+    /* Reset & Base Styles */
+    * { 
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: var(--footer-height);
+      line-height: 1.5;
+    }
+
+    /* Header Styles */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--card);
+      border-bottom: 1px solid var(--line);
+      padding: var(--spacing-md);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* Controls */
+    .controls {
+      margin-top: var(--spacing-sm);
+      display: flex;
+      gap: var(--spacing-sm);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Form Elements */
+    input[type="date"] {
+      background: var(--card2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+    }
+
+    button {
+      background: var(--acc);
+      color: #fff;
+      border: none;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    button:active {
+      opacity: 0.8;
+    }
+
+    button.ghost {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    /* Main Content */
+    main {
+      padding: var(--spacing-md);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Tabs */
+    .tabs {
+      margin-top: var(--spacing-md);
+      display: flex;
+      gap: var(--spacing-sm);
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--acc);
+      border-color: var(--acc);
+    }
+
+    .tab {
+      display: none;
+    }
+
+    .tab.active {
+      display: block;
+    }
+
+    /* Stats Section */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+
+    @media (max-width: 420px) {
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .stat {
+      background: var(--card2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      text-align: center;
+    }
+
+    .stat h3 {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: normal;
+    }
+
+    .stat p {
+      margin: var(--spacing-xs) 0 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    /* Exercise Blocks */
+    .blocks {
+      display: grid;
+      gap: var(--spacing-md);
+    }
+
+    .block {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-md);
+    }
+
+    .block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-sm);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: var(--spacing-xs);
+    }
+
+    .block-title {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .block-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+      flex-wrap: wrap;
+    }
+
+    /* Exercise Sets */
+    .sets {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: var(--spacing-sm);
+    }
+
+    .set {
+      background: var(--input-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: var(--spacing-sm);
+      position: relative;
+    }
+
+    .set .num {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: var(--spacing-xs);
+      text-align: center;
+    }
+
+    .set .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-sm);
+      align-items: center;
+    }
+
+    /* Number Input */
+    .num-input {
+      display: flex;
+      align-items: center;
+      background: var(--input-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      height: 36px;
+    }
+
+    .num-input button {
+      width: 36px;
+      height: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .num-input .value {
+      flex: 1;
+      text-align: center;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .num-input .unit {
+      width: 44px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      border-left: 1px solid var(--line);
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      padding: var(--spacing-md);
+    }
+
+  .modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sheet {
+    background: var(--card);
+    border-radius: var(--radius-xl);
+    width: 100%;
+    max-width: var(--modal-max-width);
+    max-height: 90vh;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sheet-title {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .sheet-content {
+      padding: var(--spacing-md);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .picker-item {
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .picker-item[aria-selected="true"] {
+        color: var(--acc);
+        font-weight: bold;
+    }
+
+    .center-line {
+        position: relative;
+        height: 200px;
+        overflow: auto;
+    }
+
+    .picker {
+        padding: 80px 0;
+    }
+
+    /* Footer Actions */
+    .page-actions {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--card);
+        border-top: 1px solid var(--line);
+        padding: var(--spacing-sm) var(--spacing-md);
+        display: flex;
+        gap: var(--spacing-sm);
+        z-index: 9;
+    }
+
+    .page-actions button {
+      flex: 1;
+    }
+
+    /* Utility Classes */
+    .hidden {
+      display: none !important;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin: var(--spacing-sm) 0;
+    }
+
+    /* Loading Indicator */
+    #loading-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    #loading-indicator.active {
+      display: flex;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--acc);
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Indicator -->
+  <div id="loading-indicator">
+    <div class="spinner"></div>
+  </div>
+
+  <header>
+    <h1>Трекер тренировок</h1>
+    <div class="muted">Один день = одна тренировка. Сохранение в Telegram CloudStorage</div>
+
+    <div class="controls" id="controls-workout">
+      <label for="date">Дата:</label>
+      <input type="date" id="date" aria-label="Выбор даты тренировки" />
+      <button id="save" type="button">Сохранить</button>
+      <button id="clear" type="button" class="ghost">Очистить день</button>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="workout" role="tab" aria-selected="true" aria-controls="tab-workout">
+        Тренировка
+      </button>
+      <button class="tab-btn" data-tab="history" role="tab" aria-selected="false" aria-controls="tab-history">
+        История
+      </button>
+      <button class="tab-btn" data-tab="stats" role="tab" aria-selected="false" aria-controls="tab-stats">
+        Статистика
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Вкладка: Тренировка -->
+    <section id="tab-workout" class="tab active" role="tabpanel" aria-labelledby="tab-workout">
+      <div class="stats">
+        <div class="stat">
+          <h3>Тоннаж</h3>
+          <p id="statVolume">0 кг</p>
+        </div>
+        <div class="stat">
+          <h3>Повторы</h3>
+          <p id="statReps">0</p>
+        </div>
+        <div class="stat">
+          <h3>Макс. вес</h3>
+          <p id="statMax">0 кг</p>
+        </div>
+      </div>
+
+      <div class="hint">
+        Тап по числу — колесо выбора. Кнопки +/- — быстрый шаг. Новый подход копирует вес предыдущего.
+      </div>
+
+      <div id="blocks" class="blocks"></div>
+    </section>
+
+    <!-- Вкладка: История -->
+    <section id="tab-history" class="tab" role="tabpanel" aria-labelledby="tab-history">
+      <div id="history-list" class="list" role="list"></div>
+    </section>
+
+    <!-- Вкладка: Статистика -->
+    <section id="tab-stats" class="tab" role="tabpanel" aria-labelledby="tab-stats">
+      <div class="stat-cards">
+        <div class="card">
+          <h3>Всего тренировок</h3>
+          <div class="metric" id="st-total-workouts">0</div>
+        </div>
+        <div class="card">
+          <h3>Общий тоннаж</h3>
+          <div class="metric" id="st-total-volume">0 кг</div>
+        </div>
+        <div class="card">
+          <h3>Средний тоннаж</h3>
+          <div class="metric" id="st-avg-volume">0 кг</div>
+        </div>
+        <div class="card">
+          <h3>Лучший день (тоннаж)</h3>
+          <div class="metric" id="st-best-volume">0 кг</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Топ упражнений</h3>
+        <div class="list" id="st-top-exercises" role="list"></div>
+      </div>
+
+      <div class="card" style="margin-top: var(--spacing-md);">
+        <h3>Рекорды (макс. вес)</h3>
+        <div class="list" id="st-records" role="list"></div>
+      </div>
+
+      <div class="chart-area">
+        <div class="chart-header">
+          <select id="st-exercise-select" aria-label="Выбор упражнения для графика"></select>
+        </div>
+        <canvas id="st-canvas" width="600" height="220" aria-label="График прогресса"></canvas>
+        <div id="st-empty" class="empty" style="display:none;">
+          Нет данных для выбранного упражнения
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Кнопки добавления -->
+  <div class="page-actions" id="page-actions">
+    <button id="addSingle" type="button" class="ghost">+ Упражнение</button>
+    <button id="addSuperset" type="button" class="ghost">+ Суперсет</button>
+  </div>
+
+  <!-- Модальные окна -->
+  <!-- Модалка: сводка тренировки (История) -->
+  <div class="modal" id="history-modal" aria-hidden="true" role="dialog" aria-labelledby="history-title">
+    <div class="sheet">
+      <div class="sheet-header">
+        <div class="sheet-title" id="history-title">Тренировка</div>
+        <div class="sheet-actions-inline">
+          <button class="btn-cancel" id="history-close" type="button">Закрыть</button>
+        </div>
+      </div>
+      <div id="history-content" class="sheet-content"></div>
+    </div>
+  </div>
+
+  <!-- Модалка: выбор значения -->
+  <div class="modal" id="picker-modal" aria-hidden="true" role="dialog" aria-labelledby="picker-title">
+    <div class="sheet">
+      <div class="sheet-header">
+        <div class="sheet-title" id="picker-title">Выбор значения</div>
+        <div class="sheet-actions-inline">
+          <button class="btn-cancel" id="picker-cancel" type="button">Отмена</button>
+          <button class="btn-ok" id="picker-ok" type="button">OK</button>
+        </div>
+      </div>
+      <div class="center-line">
+        <div class="picker" id="picker-list" role="listbox"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Шаблоны -->
+  <template id="set-template">
+    <div class="set">
+      <div class="num">Подход 1</div>
+      <div class="row">
+        <div class="num-input" data-type="weight" data-step="2.5">
+          <button class="minus" type="button" aria-label="Уменьшить вес">−</button>
+          <div class="value" role="button" tabindex="0" aria-label="Вес">0</div>
+          <div class="unit">кг</div>
+          <button class="plus" type="button" aria-label="Увеличить вес">+</button>
+        </div>
+        <div class="num-input" data-type="reps" data-step="1">
+          <button class="minus" type="button" aria-label="Уменьшить повторения">−</button>
+          <div class="value" role="button" tabindex="0" aria-label="Повторы">0</div>
+          <div class="unit">×</div>
+          <button class="plus" type="button" aria-label="Увеличить повторения">+</button>
+        </div>
+      </div>
+      <button class="rm" type="button" title="Удалить подход" aria-label="Удалить подход">×</button>
+    </div>
+  </template>
+
+  <!-- Список упражнений -->
+  <datalist id="exercise-suggestions">
+    <!-- Грудь -->
+    <option value="Жим лежа штанга"></option>
+    <option value="Жим лежа гантели"></option>
+    <option value="Жим на наклонной скамье штанга"></option>
+    <option value="Жим на наклонной скамье гантели"></option>
+    <option value="Разводка гантелей лежа"></option>
+    <option value="Сведение рук в тренажере (бабочка)"></option>
+    <option value="Отжимания от пола"></option>
+    <option value="Отжимания на брусьях (грудь)"></option>
+    <!-- Спина -->
+    <option value="Подтягивания широким хватом"></option>
+    <option value="Подтягивания узким хватом"></option>
+    <option value="Тяга верхнего блока"></option>
+    <option value="Тяга горизонтального блока"></option>
+    <option value="Тяга штанги в наклоне"></option>
+    <option value="Тяга гантели в наклоне"></option>
+    <option value="Тяга Т-грифа"></option>
+    <option value="Пуловер с гантелью"></option>
+    <option value="Гиперэкстензия"></option>
+    <!-- Ноги -->
+    <option value="Приседания со штангой"></option>
+    <option value="Фронтальные приседания"></option>
+    <option value="Приседания с гантелями"></option>
+    <option value="Жим ногами"></option>
+    <option value="Выпады с гантелями"></option>
+    <option value="Болгарские сплит-приседания"></option>
+    <option value="Сгибания ног лежа"></option>
+    <option value="Разгибания ног сидя"></option>
+    <option value="Подъем на носки стоя (икры)"></option>
+    <option value="Подъем на носки сидя (икры)"></option>
+    <option value="Румынская тяга со штангой"></option>
+    <option value="Румынская тяга с гантелями"></option>
+    <!-- Плечи -->
+    <option value="Жим гантелей сидя"></option>
+    <option value="Жим штанги стоя"></option>
+    <option value="Махи гантелями в стороны"></option>
+    <option value="Махи гантелями вперед"></option>
+    <option value="Тяга штанги к подбородку"></option>
+    <option value="Обратные махи (задняя дельта)"></option>
+    <option value="Тяга каната к лицу (Face Pull)"></option>
+    <!-- Руки -->
+    <option value="Подъем штанги на бицепс"></option>
+    <option value="Подъем гантелей на бицепс"></option>
+    <option value="Молотки с гантелями"></option>
+    <option value="Французский жим штанги"></option>
+    <option value="Французский жим гантели"></option>
+    <option value="Разгибания рук на блоке (трицепс)"></option>
+    <option value="Отжимания на брусьях (трицепс)"></option>
+    <!-- Пресс -->
+    <option value="Скручивания на полу"></option>
+    <option value="Скручивания на фитболе"></option>
+    <option value="Подъем ног в висе"></option>
+    <option value="Планка"></option>
+    <option value="Велосипед (пресс)"></option>
+    <option value="Русский твист"></option>
+  </datalist>
+  <script>
+// Constants
+const CONSTANTS = {
+  MAX_WORKOUTS: 300,
+  ITEM_HEIGHT: 40,
+  PICKER_CENTER_OFFSET: 80,
+  MAX_WEIGHT: 300,
+  MAX_REPS: 50,
+  WEIGHT_STEP: 2.5,
+  REPS_STEP: 1,
+  STORAGE_KEYS: {
+    WORKOUTS: 'workouts',
+    DRAFT: 'draftWorkout',
+    LAST_DATE: 'lastWorkoutDate'
+  }
+};
+
+// Loading Indicator
+const loadingIndicator = {
+  show() {
+    document.getElementById('loading-indicator').classList.add('active');
+  },
+  hide() {
+    document.getElementById('loading-indicator').classList.remove('active');
+  }
+};
+
+// Telegram initialization
+let tg = window.Telegram?.WebApp;
+if (!tg) {
+    console.error('Telegram WebApp не доступен');
+    document.body.innerHTML = '<div style="padding: 20px; text-align: center;">Приложение должно быть открыто в Telegram</div>';
+} else {
+    tg.ready();
+    tg.expand();
+    
+    if (tg.setHeaderColor) tg.setHeaderColor('#171a21');
+    if (tg.setBackgroundColor) tg.setBackgroundColor('#0f1115');
+}
+
+// Helper Functions
+const helpers = {
+  qs(selector, root = document) {
+    try {
+      return root.querySelector(selector);
+    } catch (e) {
+      console.error(`Error querying selector "${selector}":`, e);
+      return null;
+    }
+  },
+
+  qsa(selector, root = document) {
+    try {
+      return Array.from(root.querySelectorAll(selector));
+    } catch (e) {
+      console.error(`Error querying selector "${selector}":`, e);
+      return [];
+    }
+  },
+
+  escapeHtml(str = '') {
+    const htmlEntities = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    };
+    return str.replace(/[&<>"']/g, char => htmlEntities[char]);
+  },
+
+  todayISO() {
+    try {
+      const d = new Date();
+      const offset = d.getTimezoneOffset() * 60000;
+      return new Date(Date.now() - offset).toISOString().slice(0, 10);
+    } catch (e) {
+      console.error('Error getting today ISO date:', e);
+      return new Date().toISOString().slice(0, 10);
+    }
+  },
+
+  formatDate(dateStr) {
+    try {
+      return new Date(dateStr).toLocaleDateString('ru-RU');
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return dateStr;
+    }
+  },
+
+  safeParseFloat(value, defaultValue = 0) {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? defaultValue : parsed;
+  },
+
+  round(value, decimals = 1) {
+    const multiplier = Math.pow(10, decimals);
+    return Math.round(value * multiplier) / multiplier;
+  },
+
+  haptic(type = 'light') {
+    try {
+      if (tg?.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred(type);
+      }
+    } catch (e) {
+      console.error('Error triggering haptic feedback:', e);
+    }
+  },
+
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+};
+
+// Error Handler
+const errorHandler = {
+  handle(error, context) {
+    console.error(`Error in ${context}:`, error);
+    
+    if (tg?.showAlert) {
+      tg.showAlert(`Произошла ошибка: ${error.message}`);
+    }
+    
+    loadingIndicator.hide();
+  },
+
+  showError(message) {
+    if (tg?.showAlert) {
+      tg.showAlert(message);
+    } else {
+      alert(message);
+    }
+  }
+};
+
+// Storage Service
+const storageService = {
+    async isAvailable() {
+        try {
+            const testKey = '_test_storage_';
+            await new Promise((resolve, reject) => {
+                tg.CloudStorage.setItem(testKey, '1', error => {
+                    if (error) reject(error);
+                    else resolve();
+                });
+            });
+            return true;
+        } catch (e) {
+            return false;
+        }
+    },
+
+    async save(key, value) {
+        try {
+            const stringValue = JSON.stringify(value);
+            if (stringValue.length > 512000) {
+                throw new Error('Превышен размер данных для сохранения');
+            }
+
+            await new Promise((resolve, reject) => {
+                tg.CloudStorage.setItem(key, stringValue, error => {
+                    if (error) reject(error);
+                    else resolve();
+                });
+            });
+        } catch (error) {
+            console.error('Ошибка сохранения в CloudStorage:', error);
+            throw error;
+        }
+    },
+
+    async load(key) {
+        try {
+            const value = await new Promise((resolve, reject) => {
+                tg.CloudStorage.getItem(key, (error, value) => {
+                    if (error) reject(error);
+                    else resolve(value);
+                });
+            });
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            console.error('Ошибка загрузки из CloudStorage:', error);
+            return null;
+        }
+    },
+
+    async remove(key) {
+        try {
+            await new Promise((resolve, reject) => {
+                tg.CloudStorage.removeItem(key, error => {
+                    if (error) reject(error);
+                    else resolve();
+                });
+            });
+        } catch (error) {
+            console.error('Ошибка удаления из CloudStorage:', error);
+        }
+    }
+};
+// UI Controller
+const uiController = {
+  elements: {
+    date: helpers.qs('#date'),
+    blocks: helpers.qs('#blocks'),
+    pageActions: helpers.qs('#page-actions'),
+    stats: {
+      volume: helpers.qs('#statVolume'),
+      reps: helpers.qs('#statReps'),
+      max: helpers.qs('#statMax')
+    },
+    picker: {
+      modal: helpers.qs('#picker-modal'),
+      list: helpers.qs('#picker-list'),
+      ok: helpers.qs('#picker-ok'),
+      cancel: helpers.qs('#picker-cancel')
+    },
+    history: {
+      modal: helpers.qs('#history-modal'),
+      list: helpers.qs('#history-list'),
+      content: helpers.qs('#history-content'),
+      close: helpers.qs('#history-close')
+    },
+    tabs: {
+      buttons: helpers.qsa('.tab-btn'),
+      panels: helpers.qsa('.tab')
+    }
+  },
+
+  init() {
+    try {
+      this.validateElements();
+      this.setupEventListeners();
+      this.initTabs();
+    } catch (error) {
+      errorHandler.handle(error, 'UI initialization');
+    }
+  },
+
+  validateElements() {
+    // Проверка наличия всех необходимых элементов
+    const requiredElements = {
+      date: '#date',
+      blocks: '#blocks',
+      pageActions: '#page-actions',
+      'stats.volume': '#statVolume',
+      'stats.reps': '#statReps',
+      'stats.max': '#statMax',
+      'picker.modal': '#picker-modal',
+      'picker.list': '#picker-list',
+      'picker.ok': '#picker-ok',
+      'picker.cancel': '#picker-cancel',
+      'history.modal': '#history-modal',
+      'history.list': '#history-list',
+      'history.content': '#history-content',
+      'history.close': '#history-close'
+    };
+
+    for (const [key, selector] of Object.entries(requiredElements)) {
+      const path = key.split('.');
+      let element = this.elements;
+      for (let i = 0; i < path.length - 1; i++) {
+        element = element[path[i]];
+      }
+      if (!element[path[path.length - 1]]) {
+        throw new Error(`Required element not found: ${selector}`);
+      }
+    }
+  },
+
+  setupEventListeners() {
+    // Обработчики вкладок
+    this.elements.tabs.buttons.forEach(btn => {
+      btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+    });
+
+    // Обработчики модальных окон
+    this.elements.history.close.addEventListener('click', () => {
+      this.elements.history.modal.classList.remove('active');
+    });
+
+    this.elements.picker.ok.addEventListener('click', () => {
+      this.elements.picker.modal.classList.remove('active');
+      const selectedValue = this.getSelectedPickerValue();
+      if (this.onPickerSelect) {
+        this.onPickerSelect(selectedValue);
+      }
+    });
+
+    this.elements.picker.cancel.addEventListener('click', () => {
+      this.elements.picker.modal.classList.remove('active');
+    });
+
+    // Закрытие модалок по клику вне
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal')) {
+        e.target.classList.remove('active');
+      }
+    });
+  },
+
+  initTabs() {
+    this.elements.tabs.buttons.forEach(btn => {
+      btn.setAttribute('aria-selected', 'false');
+      btn.setAttribute('tabindex', '-1');
+    });
+    
+    this.elements.tabs.panels.forEach(panel => {
+      panel.setAttribute('hidden', '');
+      panel.classList.remove('active');
+    });
+
+    // Активируем первую вкладку
+    const firstTab = this.elements.tabs.buttons[0];
+    if (firstTab) {
+      this.switchTab(firstTab.dataset.tab);
+    }
+  },
+
+  switchTab(tabId) {
+    this.elements.tabs.buttons.forEach(btn => {
+      const isActive = btn.dataset.tab === tabId;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive);
+      btn.setAttribute('tabindex', isActive ? '0' : '-1');
+    });
+
+    this.elements.tabs.panels.forEach(panel => {
+      const isActive = panel.id === `tab-${tabId}`;
+      panel.classList.toggle('active', isActive);
+      panel.removeAttribute('hidden');
+    });
+
+    // Обновляем UI в зависимости от вкладки
+    if (tabId === 'workout') {
+      this.elements.pageActions.style.display = 'flex';
+    } else {
+      this.elements.pageActions.style.display = 'none';
+    }
+
+    // Загружаем данные для вкладки
+    if (tabId === 'history') {
+      historyController.loadHistory();
+    } else if (tabId === 'stats') {
+      statsController.loadStats();
+    }
+  },
+
+  updateStats() {
+    try {
+      let volume = 0, reps = 0, maxWeight = 0;
+      
+      helpers.qsa('.set').forEach(set => {
+        const weightEl = helpers.qs('.num-input[data-type="weight"] .value', set);
+        const repsEl = helpers.qs('.num-input[data-type="reps"] .value', set);
+        
+        if (!weightEl || !repsEl) return;
+
+        const weight = helpers.safeParseFloat(weightEl.textContent);
+        const r = helpers.safeParseFloat(repsEl.textContent);
+
+        if (weight > 0 && r > 0) {
+          volume += weight * r;
+          reps += r;
+          if (weight > maxWeight) maxWeight = weight;
+        }
+      });
+
+      this.elements.stats.volume.textContent = `${helpers.round(volume)} кг`;
+      this.elements.stats.reps.textContent = String(reps);
+      this.elements.stats.max.textContent = `${maxWeight} кг`;
+    } catch (error) {
+      errorHandler.handle(error, 'Update stats');
+    }
+  },
+
+  showPicker(values, initialValue, onSelect) {
+    try {
+      this.elements.picker.list.innerHTML = values.map(v => 
+        `<div class="picker-item" role="option" ${v === initialValue ? 'aria-selected="true"' : ''}>${v}</div>`
+      ).join('');
+
+      const selectedIndex = values.indexOf(initialValue);
+      if (selectedIndex !== -1) {
+        const scrollTop = selectedIndex * CONSTANTS.ITEM_HEIGHT - CONSTANTS.PICKER_CENTER_OFFSET;
+        this.elements.picker.list.scrollTop = scrollTop;
+      }
+
+      this.onPickerSelect = onSelect;
+      this.elements.picker.modal.classList.add('active');
+    } catch (error) {
+      errorHandler.handle(error, 'Show picker');
+    }
+  },
+
+  getSelectedPickerValue() {
+    const list = this.elements.picker.list;
+    const centerY = list.offsetHeight / 2;
+    const elements = Array.from(list.children);
+    
+    return elements.reduce((closest, el) => {
+      const rect = el.getBoundingClientRect();
+      const listRect = list.getBoundingClientRect();
+      const elCenterY = rect.top - listRect.top + rect.height / 2;
+      const distance = Math.abs(centerY - elCenterY);
+      
+      if (!closest || distance < closest.distance) {
+        return { element: el, distance };
+      }
+      return closest;
+    }, null)?.element?.textContent || '';
+  },
+
+  showHistoryModal(workout) {
+    try {
+      if (!workout) {
+        errorHandler.showError('Данные тренировки не найдены');
+        return;
+      }
+
+      const content = this.generateWorkoutSummary(workout);
+      this.elements.history.content.innerHTML = content;
+      this.elements.history.modal.classList.add('active');
+    } catch (error) {
+      errorHandler.handle(error, 'Show history modal');
+    }
+  },
+
+  generateWorkoutSummary(workout) {
+    try {
+      let html = `<div class="workout-summary">`;
+      html += `<div class="date">${helpers.formatDate(workout.date)}</div>`;
+
+      // Статистика
+      html += `<div class="stats">
+        <div class="stat">
+          <div class="label">Тоннаж</div>
+          <div class="value">${helpers.round(workout.stats.volume)} кг</div>
+        </div>
+        <div class="stat">
+          <div class="label">Повторы</div>
+          <div class="value">${workout.stats.reps}</div>
+        </div>
+        <div class="stat">
+          <div class="label">Макс. вес</div>
+          <div class="value">${workout.stats.maxWeight} кг</div>
+        </div>
+      </div>`;
+
+      // Упражнения
+      workout.exercises.forEach((block, blockIndex) => {
+        html += `<div class="block">`;
+        
+        block.exercises.forEach((ex, exIndex) => {
+          html += `<div class="exercise">
+            <div class="name">${helpers.escapeHtml(ex.name)}</div>
+            <div class="sets">`;
+          
+          ex.sets.forEach((set, setIndex) => {
+            html += `<div class="set">
+              <span class="num">${setIndex + 1}.</span>
+              <span class="weight">${set.weight} кг</span>
+              <span class="reps">×${set.reps}</span>
+            </div>`;
+          });
+          
+          html += `</div></div>`;
+        });
+        
+        html += `</div>`;
+      });
+
+      html += `</div>`;
+      return html;
+    } catch (error) {
+      errorHandler.handle(error, 'Generate workout summary');
+      return '<div class="error">Ошибка при формировании сводки тренировки</div>';
+    }
+  }
+};
+// Exercise Controller
+const exerciseController = {
+  createBlock(type = 'single') {
+    try {
+      const block = document.createElement('div');
+      block.className = 'block';
+      
+      const header = document.createElement('div');
+      header.className = 'block-header';
+      
+      const title = document.createElement('div');
+      title.className = 'block-title';
+      
+      const actions = document.createElement('div');
+      actions.className = 'block-actions';
+      
+      const addSet = document.createElement('button');
+      addSet.type = 'button';
+      addSet.className = 'ghost';
+      addSet.textContent = '+ Подход';
+      addSet.addEventListener('click', () => this.addSet(block));
+      
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'ghost danger';
+      remove.textContent = 'Удалить';
+      remove.addEventListener('click', () => {
+        block.remove();
+        uiController.updateStats();
+      });
+      
+      actions.append(addSet, remove);
+      header.append(title, actions);
+      block.appendChild(header);
+      
+      if (type === 'single') {
+        const exercise = this.createExercise();
+        block.appendChild(exercise);
+        title.textContent = 'Упражнение';
+      } else {
+        const exercises = document.createElement('div');
+        exercises.className = 'exercises';
+        exercises.append(
+          this.createExercise(),
+          this.createExercise()
+        );
+        block.appendChild(exercises);
+        title.textContent = 'Суперсет';
+      }
+      
+      return block;
+    } catch (error) {
+      errorHandler.handle(error, 'Create block');
+      return null;
+    }
+  },
+
+  createExercise() {
+    try {
+      const exercise = document.createElement('div');
+      exercise.className = 'exercise';
+      
+      const name = document.createElement('input');
+      name.type = 'text';
+      name.className = 'exercise-name';
+      name.placeholder = 'Название упражнения';
+      name.setAttribute('list', 'exercise-suggestions');
+      
+      const sets = document.createElement('div');
+      sets.className = 'sets';
+      
+      exercise.append(name, sets);
+      this.addSet(exercise);
+      
+      return exercise;
+    } catch (error) {
+      errorHandler.handle(error, 'Create exercise');
+      return null;
+    }
+  },
+
+  addSet(parent) {
+    try {
+      const template = document.getElementById('set-template');
+      if (!template) {
+        throw new Error('Template not found');
+      }
+      
+      const sets = parent.querySelector('.sets');
+      if (!sets) {
+        throw new Error('Sets container not found');
+      }
+      
+      const clone = template.content.cloneNode(true);
+      const set = clone.querySelector('.set');
+      
+      // Копируем вес из предыдущего подхода
+      const prevSet = sets.querySelector('.set:last-child');
+      if (prevSet) {
+        const prevWeight = helpers.qs('.num-input[data-type="weight"] .value', prevSet);
+        const newWeight = helpers.qs('.num-input[data-type="weight"] .value', set);
+        if (prevWeight && newWeight) {
+          newWeight.textContent = prevWeight.textContent;
+        }
+      }
+      
+      // Нумерация подходов
+      const setNum = sets.children.length + 1;
+      helpers.qs('.num', set).textContent = `Подход ${setNum}`;
+      
+      // Обработчики событий
+      this.setupSetListeners(set);
+      
+      sets.appendChild(set);
+      uiController.updateStats();
+      
+      return set;
+    } catch (error) {
+      errorHandler.handle(error, 'Add set');
+      return null;
+    }
+  },
+
+setupSetListeners(set) {
+    if (!set) return;
+
+    // Обработка кнопок +/-
+    set.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('button');
+        if (!btn || (!btn.classList.contains('plus') && !btn.classList.contains('minus'))) return;
+
+        const wrap = btn.closest('.num-input');
+        if (!wrap) return;
+
+        const valEl = wrap.querySelector('.value');
+        if (!valEl) return;
+
+        // Предотвращаем множественные быстрые клики
+        if (btn.dataset.processing) return;
+        btn.dataset.processing = 'true';
+        setTimeout(() => delete btn.dataset.processing, 100);
+
+        const val = helpers.safeParseFloat(valEl.textContent);
+        const step = helpers.safeParseFloat(wrap.dataset.step) || 1;
+        const isWeight = wrap.dataset.type === 'weight';
+        const max = isWeight ? CONSTANTS.MAX_WEIGHT : CONSTANTS.MAX_REPS;
+
+        const newVal = btn.classList.contains('plus') 
+            ? Math.min(val + step, max)
+            : Math.max(0, val - step);
+
+        valEl.textContent = isWeight ? helpers.round(newVal) : Math.round(newVal);
+        uiController.updateStats();
+        helpers.haptic('light');
+    });
+
+    // Обработка значений через пикер
+    helpers.qsa('.value', set).forEach(el => {
+        el.addEventListener('click', () => {
+            const wrap = el.closest('.num-input');
+            if (!wrap) return;
+
+            const isWeight = wrap.dataset.type === 'weight';
+            const step = helpers.safeParseFloat(wrap.dataset.step) || 1;
+            const max = isWeight ? CONSTANTS.MAX_WEIGHT : CONSTANTS.MAX_REPS;
+            const currentValue = helpers.safeParseFloat(el.textContent);
+
+            const values = [];
+            for (let i = 0; i <= max; i += step) {
+                values.push(isWeight ? helpers.round(i) : Math.round(i));
+            }
+
+            uiController.showPicker(values, currentValue, (value) => {
+                el.textContent = value;
+                uiController.updateStats();
+                helpers.haptic('medium');
+            });
+        });
+    });
+
+    // Удаление подхода
+    const rmBtn = helpers.qs('.rm', set);
+    if (rmBtn) {
+        rmBtn.addEventListener('click', () => {
+            const sets = set.closest('.sets');
+            set.remove();
+            
+            // Обновляем нумерацию
+            if (sets) {
+                helpers.qsa('.set', sets).forEach((set, i) => {
+                    helpers.qs('.num', set).textContent = `Подход ${i + 1}`;
+                });
+            }
+            
+            uiController.updateStats();
+            helpers.haptic('medium');
+        });
+  }
+};
+// Workout Controller
+const workoutController = {
+  async init() {
+    try {
+      // Инициализация даты
+      const today = helpers.todayISO();
+      uiController.elements.date.value = today;
+      uiController.elements.date.max = today;
+
+      // Загрузка черновика или создание новой тренировки
+      const draft = await storageService.load(CONSTANTS.STORAGE_KEYS.DRAFT);
+      if (draft && draft.date === today) {
+        this.loadWorkout(draft);
+      }
+
+      // Автосохранение
+      setInterval(() => this.saveDraft(), 30000);
+    } catch (error) {
+      errorHandler.handle(error, 'Workout controller init');
+    }
+  },
+
+  async saveDraft() {
+    try {
+      const workout = this.getWorkoutData();
+      if (workout) {
+        await storageService.save(CONSTANTS.STORAGE_KEYS.DRAFT, workout);
+      }
+    } catch (error) {
+      console.warn('Error saving draft:', error);
+    }
+  },
+
+  async saveWorkout() {
+    try {
+      loadingIndicator.show();
+
+      const workout = this.getWorkoutData();
+      if (!workout) {
+        throw new Error('Нет данных для сохранения');
+      }
+
+      if (!this.validateWorkout(workout)) {
+        throw new Error('Заполните все упражнения и подходы');
+      }
+
+      // Загружаем существующие тренировки
+      let workouts = await storageService.load(CONSTANTS.STORAGE_KEYS.WORKOUTS) || [];
+      
+      // Ограничиваем количество сохраненных тренировок
+      if (workouts.length >= CONSTANTS.MAX_WORKOUTS) {
+        workouts = workouts.slice(-CONSTANTS.MAX_WORKOUTS + 1);
+      }
+
+      // Добавляем новую тренировку
+      const existingIndex = workouts.findIndex(w => w.date === workout.date);
+      if (existingIndex !== -1) {
+        workouts[existingIndex] = workout;
+      } else {
+        workouts.push(workout);
+      }
+
+      // Сортируем по дате
+      workouts.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // Сохраняем
+      await storageService.save(CONSTANTS.STORAGE_KEYS.WORKOUTS, workouts);
+      await storageService.remove(CONSTANTS.STORAGE_KEYS.DRAFT);
+
+      tg.showPopup({
+        title: 'Успех',
+        message: 'Тренировка сохранена',
+        buttons: [{type: 'ok'}]
+      });
+
+      // Очищаем форму если это сегодняшняя тренировка
+      if (workout.date === helpers.todayISO()) {
+        this.clearWorkout();
+      }
+
+      loadingIndicator.hide();
+    } catch (error) {
+      loadingIndicator.hide();
+      errorHandler.handle(error, 'Save workout');
+    }
+  },
+
+  loadWorkout(workout) {
+    try {
+      uiController.elements.blocks.innerHTML = '';
+      
+      if (!workout || !workout.exercises) return;
+      
+      workout.exercises.forEach(block => {
+        const blockEl = exerciseController.createBlock(
+          block.exercises.length > 1 ? 'superset' : 'single'
+        );
+        
+        if (!blockEl) return;
+        
+        const exercises = blockEl.querySelectorAll('.exercise');
+        block.exercises.forEach((ex, i) => {
+          const exercise = exercises[i];
+          if (!exercise) return;
+          
+          // Название
+          const nameInput = exercise.querySelector('.exercise-name');
+          if (nameInput) {
+            nameInput.value = ex.name;
+          }
+          
+          // Подходы
+          const sets = exercise.querySelector('.sets');
+          if (!sets) return;
+          
+          sets.innerHTML = '';
+          ex.sets.forEach(set => {
+            const setEl = exerciseController.addSet(exercise);
+            if (!setEl) return;
+            
+            const weightVal = setEl.querySelector('.num-input[data-type="weight"] .value');
+            const repsVal = setEl.querySelector('.num-input[data-type="reps"] .value');
+            
+            if (weightVal) weightVal.textContent = set.weight;
+            if (repsVal) repsVal.textContent = set.reps;
+          });
+        });
+        
+        uiController.elements.blocks.appendChild(blockEl);
+      });
+      
+      uiController.updateStats();
+    } catch (error) {
+      errorHandler.handle(error, 'Load workout');
+    }
+  },
+
+  clearWorkout() {
+    try {
+      if (!confirm('Очистить все упражнения?')) return;
+      
+      uiController.elements.blocks.innerHTML = '';
+      uiController.updateStats();
+      
+      storageService.remove(CONSTANTS.STORAGE_KEYS.DRAFT).catch(console.warn);
+    } catch (error) {
+      errorHandler.handle(error, 'Clear workout');
+    }
+  },
+
+  getWorkoutData() {
+    try {
+      const blocks = helpers.qsa('.block');
+      if (!blocks.length) return null;
+
+      const exercises = [];
+      let totalVolume = 0;
+      let totalReps = 0;
+      let maxWeight = 0;
+
+      blocks.forEach(block => {
+        const blockExercises = [];
+        
+        helpers.qsa('.exercise', block).forEach(ex => {
+          const name = helpers.qs('.exercise-name', ex)?.value?.trim();
+          if (!name) return;
+          
+          const sets = [];
+          helpers.qsa('.set', ex).forEach(set => {
+            const weight = helpers.safeParseFloat(
+              helpers.qs('.num-input[data-type="weight"] .value', set)?.textContent
+            );
+            const reps = helpers.safeParseFloat(
+              helpers.qs('.num-input[data-type="reps"] .value', set)?.textContent
+            );
+            
+            if (weight > 0 && reps > 0) {
+              sets.push({ weight, reps });
+              totalVolume += weight * reps;
+              totalReps += reps;
+              if (weight > maxWeight) maxWeight = weight;
+            }
+          });
+          
+          if (sets.length) {
+            blockExercises.push({ name, sets });
+          }
+        });
+        
+        if (blockExercises.length) {
+          exercises.push({ exercises: blockExercises });
+        }
+      });
+
+      if (!exercises.length) return null;
+
+      return {
+        date: uiController.elements.date.value,
+        exercises,
+        stats: {
+          volume: totalVolume,
+          reps: totalReps,
+          maxWeight
+        }
+      };
+    } catch (error) {
+      errorHandler.handle(error, 'Get workout data');
+      return null;
+    }
+  },
+
+ validateWorkout(workout) {
+    if (!workout?.exercises?.length) {
+        return false;
+    }
+
+    return workout.exercises.every(block => 
+        block.exercises?.length && 
+        block.exercises.every(ex =>
+            ex.name?.trim() && 
+            ex.sets?.length && 
+            ex.sets.every(set => 
+                Number.isFinite(set.weight) && 
+                Number.isFinite(set.reps) && 
+                set.weight > 0 && 
+                set.reps > 0
+            )
+        )
+    );
+}
+};
+// History Controller
+const historyController = {
+  async loadHistory() {
+    try {
+      loadingIndicator.show();
+      
+      const workouts = await storageService.load(CONSTANTS.STORAGE_KEYS.WORKOUTS) || [];
+      const list = uiController.elements.history.list;
+      
+      if (!workouts.length) {
+        list.innerHTML = '<div class="empty">История пуста</div>';
+        loadingIndicator.hide();
+        return;
+      }
+      
+      list.innerHTML = workouts.map(workout => `
+        <div class="history-item" data-date="${workout.date}">
+          <div class="main">
+            <div class="date">${helpers.formatDate(workout.date)}</div>
+            <div class="stats">
+              <div class="stat">
+                <span class="label">Тоннаж:</span>
+                <span class="value">${helpers.round(workout.stats.volume)} кг</span>
+              </div>
+              <div class="stat">
+                <span class="label">Повторы:</span>
+                <span class="value">${workout.stats.reps}</span>
+              </div>
+            </div>
+          </div>
+          <div class="exercises">
+            ${workout.exercises.map(block => 
+              block.exercises.map(ex => 
+                `<div class="exercise">${helpers.escapeHtml(ex.name)}</div>`
+              ).join('')
+            ).join('')}
+          </div>
+        </div>
+      `).join('');
+      
+      // Обработчики для просмотра деталей
+      helpers.qsa('.history-item', list).forEach(item => {
+        item.addEventListener('click', () => {
+          const date = item.dataset.date;
+          const workout = workouts.find(w => w.date === date);
+          if (workout) {
+            uiController.showHistoryModal(workout);
+          }
+        });
+      });
+      
+      loadingIndicator.hide();
+    } catch (error) {
+      loadingIndicator.hide();
+      errorHandler.handle(error, 'Load history');
+    }
+  }
+};
+
+// Stats Controller
+const statsController = {
+  async loadStats() {
+    try {
+      loadingIndicator.show();
+      
+      const workouts = await storageService.load(CONSTANTS.STORAGE_KEYS.WORKOUTS) || [];
+      if (!workouts.length) {
+        this.showEmptyStats();
+        loadingIndicator.hide();
+        return;
+      }
+      
+      // Общая статистика
+      const totalVolume = workouts.reduce((sum, w) => sum + w.stats.volume, 0);
+      const avgVolume = totalVolume / workouts.length;
+      const bestVolume = Math.max(...workouts.map(w => w.stats.volume));
+      
+      helpers.qs('#st-total-workouts').textContent = workouts.length;
+      helpers.qs('#st-total-volume').textContent = `${helpers.round(totalVolume)} кг`;
+      helpers.qs('#st-avg-volume').textContent = `${helpers.round(avgVolume)} кг`;
+      helpers.qs('#st-best-volume').textContent = `${helpers.round(bestVolume)} кг`;
+      
+      // Топ упражнений
+      const exerciseStats = this.calculateExerciseStats(workouts);
+      const topExercises = Object.entries(exerciseStats)
+        .sort((a, b) => b[1].volume - a[1].volume)
+        .slice(0, 5);
+      
+      helpers.qs('#st-top-exercises').innerHTML = topExercises.map(([name, stats]) => `
+        <div class="list-item">
+          <div class="name">${helpers.escapeHtml(name)}</div>
+          <div class="stats">
+            <div class="stat">
+              <span class="label">Тоннаж:</span>
+              <span class="value">${helpers.round(stats.volume)} кг</span>
+            </div>
+            <div class="stat">
+              <span class="label">Макс.вес:</span>
+              <span class="value">${stats.maxWeight} кг</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      
+      // Рекорды
+      const records = Object.entries(exerciseStats)
+        .sort((a, b) => b[1].maxWeight - a[1].maxWeight)
+        .slice(0, 5);
+      
+      helpers.qs('#st-records').innerHTML = records.map(([name, stats]) => `
+        <div class="list-item">
+          <div class="name">${helpers.escapeHtml(name)}</div>
+          <div class="value">${stats.maxWeight} кг</div>
+        </div>
+      `).join('');
+      
+      loadingIndicator.hide();
+    } catch (error) {
+      loadingIndicator.hide();
+      errorHandler.handle(error, 'Load stats');
+    }
+  },
+
+  calculateExerciseStats(workouts) {
+    const stats = {};
+    
+    workouts.forEach(workout => {
+      workout.exercises.forEach(block => {
+        block.exercises.forEach(ex => {
+          if (!stats[ex.name]) {
+            stats[ex.name] = {
+              volume: 0,
+              maxWeight: 0,
+              totalSets: 0
+            };
+          }
+          
+          ex.sets.forEach(set => {
+            stats[ex.name].volume += set.weight * set.reps;
+            stats[ex.name].maxWeight = Math.max(stats[ex.name].maxWeight, set.weight);
+            stats[ex.name].totalSets++;
+          });
+        });
+      });
+    });
+    
+    return stats;
+  },
+
+  showEmptyStats() {
+    const elements = [
+      '#st-total-workouts',
+      '#st-total-volume',
+      '#st-avg-volume',
+      '#st-best-volume',
+      '#st-top-exercises',
+      '#st-records'
+    ];
+    
+    elements.forEach(selector => {
+      const el = helpers.qs(selector);
+      if (el) {
+        el.innerHTML = selector.includes('volume') ? '0 кг' : '0';
+      }
+    });
+  }
+};
+
+// App Controller
+const appController = {
+  async init() {
+    try {
+      // Инициализация UI
+      uiController.init();
+      
+      // Инициализация тренировки
+      await workoutController.init();
+      
+      // Обработчики событий
+      this.setupEventListeners();
+      
+      console.log('App initialized successfully');
+    } catch (error) {
+      errorHandler.handle(error, 'App initialization');
+    }
+  },
+
+  setupEventListeners() {
+    try {
+      // Кнопки добавления упражнений
+      helpers.qs('#addSingle').addEventListener('click', () => {
+        const block = exerciseController.createBlock('single');
+        if (block) {
+          uiController.elements.blocks.appendChild(block);
+        }
+      });
+      
+      helpers.qs('#addSuperset').addEventListener('click', () => {
+        const block = exerciseController.createBlock('superset');
+        if (block) {
+          uiController.elements.blocks.appendChild(block);
+        }
+      });
+      
+      // Сохранение тренировки
+      helpers.qs('#save').addEventListener('click', () => {
+        workoutController.saveWorkout();
+      });
+      
+      // Очистка тренировки
+      helpers.qs('#clear').addEventListener('click', () => {
+        workoutController.clearWorkout();
+      });
+      
+      // Автосохранение при изменении даты
+      uiController.elements.date.addEventListener('change', () => {
+        workoutController.saveDraft();
+      });
+    } catch (error) {
+      errorHandler.handle(error, 'Setup event listeners');
+    }
+  }
+};
+
+// Запуск приложения
+document.addEventListener('DOMContentLoaded', () => {
+  appController.init().catch(error => {
+    errorHandler.handle(error, 'DOMContentLoaded');
+  });
+});
+</script>
+</body>
+</html>
