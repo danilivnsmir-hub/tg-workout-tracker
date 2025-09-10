@@ -554,6 +554,7 @@
       });
     }
 function saveToCloud(workout, cb) {
+  console.log('saveToCloud called with workout:', workout);
   // Приводим дату к формату YYYY-MM-DD
   if (!workout.date) {
     console.error('Нет даты у тренировки, сохранение отменено');
@@ -562,8 +563,12 @@ function saveToCloud(workout, cb) {
   }
   workout.date = workout.date.trim();
   if (!Array.isArray(workout.exercises)) workout.exercises = [];
+  
+  console.log('Workout date after processing:', workout.date);
+  console.log('Today ISO:', todayISO());
 
   tg.CloudStorage.getItem('workouts', (err, value) => {
+    console.log('CloudStorage.getItem result - err:', err, 'value length:', value ? value.length : 0);
     let arr = [];
     if (value) {
       try { arr = JSON.parse(value) || []; } catch(e) { arr = []; }
@@ -575,15 +580,20 @@ function saveToCloud(workout, cb) {
     }
 
     const i = arr.findIndex(w => w.date === workout.date);
+    console.log('Found existing workout at index:', i);
     if (i >= 0) arr[i] = workout; else arr.push(workout);
     if (arr.length > 300) arr = arr.slice(-300);
 
+    console.log('Attempting to save array with length:', arr.length);
     tg.CloudStorage.setItem('workouts', JSON.stringify(arr), (e) => {
+      console.log('CloudStorage.setItem result - error:', e);
       if (e) {
+        console.log('CloudStorage failed, trying localStorage');
         try { localStorage.setItem('workouts', JSON.stringify(arr)); } catch(_) {}
       }
       workoutsCache = arr.slice();
       tg.CloudStorage.setItem('lastWorkoutDate', workout.date, ()=>{});
+      console.log('Calling callback');
       if (cb) cb();
     });
   });
@@ -607,18 +617,23 @@ function clearDay(dateStr, cb) {
 }
 
 function loadForDate(dateStr) {
+  console.log('loadForDate called with:', dateStr);
   loadFromCloud(list => {
     if (!Array.isArray(list)) list = [];
     const w = list.find(x => x.date === dateStr);
+    console.log('Found workout for date:', w ? 'yes' : 'no');
     if (w) {
       if (!Array.isArray(w.exercises)) w.exercises = [];
+      console.log('Loading existing workout with', w.exercises.length, 'exercises');
       populateFromWorkout(w);
     } else {
-      $blocks.innerHTML = '';
-      blockCounter = 0;
-      addBlock('superset');
-      addBlock('single');
-      updateStats();
+      console.log('No existing workout found, keeping current form data');
+      // НЕ очищаем форму автоматически - позволяем пользователю сохранить текущие данные на выбранную дату
+      // $blocks.innerHTML = '';
+      // blockCounter = 0;
+      // addBlock('superset');
+      // addBlock('single');
+      // updateStats();
     }
   });
 }
@@ -929,10 +944,14 @@ function drawProgressChart() {
     qs('#addSuperset').addEventListener('click', ()=>{ addBlock('superset'); saveDraft(); });
 
     qs('#save').addEventListener('click', ()=>{
+      console.log('Save button clicked, date value:', $date.value);
       if(!$date.value) return tg.showAlert('Выбери дату');
       const data=collectWorkoutData();
+      console.log('Collected workout data:', data);
       if(!data.exercises.length) return tg.showAlert('Добавь хотя бы одно упражнение с подходами');
+      console.log('Attempting to save to cloud...');
       saveToCloud(data, ()=>{
+        console.log('Successfully saved to cloud');
         clearDraft();
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         tg.showPopup({ title:'Сохранено', message:`📅 ${new Date(data.date).toLocaleDateString('ru-RU')}\n⚖️ ${data.totalVolume} кг • 🔄 ${data.totalReps} повт.`, buttons:[{type:'ok'}] });
@@ -954,7 +973,12 @@ function drawProgressChart() {
       });
     });
 
-    $date.addEventListener('change', e=>{ loadForDate(e.target.value); saveDraft(); });
+    $date.addEventListener('change', e=>{ 
+      console.log('Date changed to:', e.target.value);
+      loadForDate(e.target.value); 
+      // Убираем saveDraft() отсюда, чтобы избежать конфликтов
+      // saveDraft(); 
+    });
     qs('#st-exercise-select').addEventListener('change', drawProgressChart);
 
     // Init with draft-first logic (Variant 1)
