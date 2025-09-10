@@ -230,18 +230,51 @@
     flex-wrap: wrap;
     }
 
+    .exercise-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    }
+
     .exercise-name {
-    width: 100%;
+    flex: 1;
     background: var(--input-bg);
     border: 1px solid var(--line);
     color: var(--text);
     padding: var(--spacing-sm) var(--spacing-md);
     border-radius: var(--radius-sm);
-    margin-bottom: var(--spacing-sm);
     }
 
     .exercise-name::placeholder {
     color: var(--muted);
+    }
+
+    .exercise-remove {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 50%;
+    background: var(--danger);
+    color: white;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    }
+
+    .exercise-remove:hover {
+    opacity: 1;
+    }
+
+    /* Скрыть кнопку удаления для единичных упражнений */
+    .block[data-type="single"] .exercise-remove {
+    display: none;
     }
 
     /* Exercise Sets */
@@ -1523,6 +1556,27 @@ const exerciseController = {
         this.addSet(block);
       });
       
+      // Кнопка добавления упражнения (только для суперсетов)
+      const addExercise = document.createElement('button');
+      addExercise.type = 'button';
+      addExercise.className = 'ghost';
+      addExercise.textContent = '+ Упражнение';
+      addExercise.setAttribute('aria-label', 'Добавить упражнение в суперсет');
+      addExercise.style.display = type === 'superset' ? 'inline-block' : 'none';
+      addExercise.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (type === 'superset') {
+          const exercisesContainer = helpers.qs('.exercises', block);
+          if (exercisesContainer) {
+            const newExercise = this.createExercise();
+            if (newExercise) {
+              exercisesContainer.appendChild(newExercise);
+              helpers.haptic('light');
+            }
+          }
+        }
+      });
+      
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'ghost danger';
@@ -1537,25 +1591,29 @@ const exerciseController = {
         }
       });
       
-      actions.append(addSet, remove);
+      actions.append(addSet, addExercise, remove);
       header.append(title, actions);
       block.appendChild(header);
       
       if (type === 'single') {
+        console.log('Создаем SINGLE упражнение');
         const exercise = this.createExercise();
         if (exercise) {
           block.appendChild(exercise);
           title.textContent = 'Упражнение';
         }
       } else {
+        console.log('Создаем SUPERSET');
         const exercises = document.createElement('div');
         exercises.className = 'exercises';
+        console.log('Создан контейнер exercises с классом:', exercises.className);
         const ex1 = this.createExercise();
         const ex2 = this.createExercise();
         if (ex1 && ex2) {
           exercises.append(ex1, ex2);
           block.appendChild(exercises);
           title.textContent = 'Суперсет';
+          console.log('Суперсет создан, у блока data-type:', block.dataset.type);
         }
       }
       
@@ -1571,6 +1629,10 @@ const exerciseController = {
       const exercise = document.createElement('div');
       exercise.className = 'exercise';
       
+      // Заголовок упражнения с кнопкой удаления
+      const header = document.createElement('div');
+      header.className = 'exercise-header';
+      
       const name = document.createElement('input');
       name.type = 'text';
       name.className = 'exercise-name';
@@ -1583,10 +1645,37 @@ const exerciseController = {
         workoutController.saveDraft();
       }, CONSTANTS.AUTOSAVE_DELAY));
       
+      // Кнопка удаления упражнения (только для суперсетов)
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'exercise-remove';
+      removeBtn.innerHTML = '×';
+      removeBtn.title = 'Удалить упражнение';
+      removeBtn.setAttribute('aria-label', 'Удалить упражнение');
+      removeBtn.style.backgroundColor = 'red'; // Временно для отладки
+      removeBtn.style.zIndex = '999999'; // Высокий z-index
+      console.log('Создаем кнопку удаления упражнения');
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        console.log('Кнопка удаления упражнения нажата');
+        const exercisesContainer = exercise.closest('.exercises');
+        if (exercisesContainer && exercisesContainer.children.length > 1) {
+          // Можем удалить только если упражнений больше одного
+          console.log('Удаляем упражнение, осталось:', exercisesContainer.children.length - 1);
+          exercise.remove();
+          uiController.updateStats();
+          helpers.haptic('medium');
+        } else {
+          console.log('Нельзя удалить - упражнение одно или контейнер не найден');
+        }
+      });
+      
+      header.append(name, removeBtn);
+      
       const sets = document.createElement('div');
       sets.className = 'sets';
       
-      exercise.append(name, sets);
+      exercise.append(header, sets);
       this.addSet(exercise);
       
       return exercise;
@@ -1598,6 +1687,8 @@ const exerciseController = {
 
   addSet(parent) {
     try {
+      console.log('=== addSet вызвана ===');
+      console.trace(); // Показать стек вызовов
       const template = document.getElementById('set-template');
       if (!template) {
         throw new Error('Set template not found');
@@ -1733,21 +1824,32 @@ const exerciseController = {
       if (rmBtn) {
         rmBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const sets = set.closest('.sets');
-          set.remove();
+          e.preventDefault();
+          console.log('Кнопка удаления подхода нажата');
           
-          // Обновляем нумерацию
-          if (sets) {
-            helpers.qsa('.set', sets).forEach((set, i) => {
-              const numEl = helpers.qs('.num', set);
+          const setsContainer = set.closest('.sets');
+          console.log('Найден контейнер подходов:', !!setsContainer, 'Количество подходов:', setsContainer?.children.length);
+          
+          // Временно разрешаем удалять любой подход для тестирования
+          if (setsContainer) {
+            console.log('Удаляем подход, было:', setsContainer.children.length);
+            set.remove();
+            
+            // Обновляем нумерацию если остались подходы
+            const remainingSets = helpers.qsa('.set', setsContainer);
+            remainingSets.forEach((remainingSet, i) => {
+              const numEl = helpers.qs('.num', remainingSet);
               if (numEl) {
                 numEl.textContent = `Подход ${i + 1}`;
               }
             });
+            
+            uiController.updateStats();
+            helpers.haptic('medium');
+            console.log('Подход удален, осталось:', remainingSets.length);
+          } else {
+            console.log('Контейнер подходов не найден!');
           }
-          
-          uiController.updateStats();
-          helpers.haptic('medium');
         });
       }
     } catch (error) {
