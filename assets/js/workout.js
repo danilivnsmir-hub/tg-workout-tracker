@@ -40,6 +40,27 @@ const exercisesList = [
   "Жим узким хватом"
 ];
 
+// ====== WEIGHT & REPS OPTIONS ======
+function generateWeights() {
+  const weights = [];
+  // до 20 кг шаг 0.5
+  for (let w = 0; w <= 20; w += 0.5) {
+    weights.push(w);
+  }
+  // от 22.5 до 300 шаг 2.5
+  for (let w = 22.5; w <= 300; w += 2.5) {
+    weights.push(w);
+  }
+  return weights;
+}
+
+function generateReps() {
+  return Array.from({ length: 50 }, (_, i) => i + 1);
+}
+
+const weightOptions = generateWeights();
+const repsOptions = generateReps();
+
 // ====== STATS ======
 function updateStats() {
   let volume = 0;
@@ -131,6 +152,7 @@ function renderWorkout() {
 
         blockDiv.innerHTML += `
           <div class="superset-ex">
+            <h4>Упражнение ${exIdx + 1}</h4>
             <select onchange="updateExerciseName(${blockIdx}, ${exIdx}, this.value)">
               <option value="">-- выбрать упражнение --</option>
               ${exerciseOptions}
@@ -166,7 +188,6 @@ addSupersetBtn.onclick = () => {
   vibrate();
 };
 
-// универсальные обновлялки для одиночных и суперсетов
 function addSet(blockIdx, exIdx) {
   if (workout[blockIdx].type === "single") {
     const last = workout[blockIdx].sets[workout[blockIdx].sets.length - 1];
@@ -207,4 +228,43 @@ function updateSet(blockIdx, exIdx, sIdx, field, val) {
   updateStats();
 }
 
-// ====== SAVE, CLEAR, RESTORE ====== (без изменений, как у тебя было)
+// ====== SAVE & CLEAR ======
+saveBtn.onclick = async () => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const key = "workout_" + today;
+
+    await setData(key, workout);
+    showToast("Тренировка сохранена ✅");
+    vibrate();
+  } catch (e) {
+    showError(e);
+  }
+};
+
+clearBtn.onclick = async () => {
+  if (confirm("Очистить тренировку?")) {
+    workout = [];
+    renderWorkout();
+
+    const today = new Date().toISOString().split("T")[0];
+    const key = "workout_" + today;
+    await removeData(key);
+    showToast("Очищено 🗑");
+    vibrate();
+  }
+};
+
+// ====== RESTORE DRAFT ======
+(async () => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const key = "workout_" + today;
+
+    const data = await getData(key, []);
+    workout = data;
+    renderWorkout();
+  } catch (e) {
+    console.error("Ошибка загрузки тренировки:", e);
+  }
+})();
