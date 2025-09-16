@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fitness Hub</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Main Navigation -->
+        <header class="app-header">
+            <h1 class="app-title">🏋️ Fitness Hub</h1>
+            <button id="settings-btn" class="icon-btn">⚙️</button>
+        </header>
+
+        <!-- Module Cards -->
+        <div id="main-screen" class="screen active">
+            <div class="modules-grid">
+                <div class="module-card" data-module="workout">
+                    <div class="module-icon">💪</div>
+                    <h3 class="module-title">Тренировки</h3>
+                    <p class="module-desc">Создавай и отслеживай свои тренировки</p>
+                    <div class="module-stats">
+                        <span id="draft-indicator" class="draft-badge" style="display: none;">Есть черновик</span>
+                    </div>
+                </div>
+
+                <div class="module-card" data-module="history">
+                    <div class="module-icon">📅</div>
+                    <h3 class="module-title">История</h3>
+                    <p class="module-desc">Просматривай прошлые тренировки</p>
+                    <div class="module-stats">
+                        <span id="total-workouts">0 тренировок</span>
+                    </div>
+                </div>
+
+                <div class="module-card" data-module="stats">
+                    <div class="module-icon">📊</div>
+                    <h3 class="module-title">Статистика</h3>
+                    <p class="module-desc">Анализируй свой прогресс</p>
+                    <div class="module-stats">
+                        <span id="total-tonnage">0 кг</span>
+                    </div>
+                </div>
+
+                <div class="module-card alpha" data-module="alpha">
+                    <div class="module-icon">🚀</div>
+                    <h3 class="module-title">Alpha</h3>
+                    <p class="module-desc">Тестируй новые функции</p>
+                    <div class="module-stats">
+                        <span class="alpha-label">Экспериментальная версия</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workout Module -->
+        <div id="workout-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn">← Назад</button>
+                <h2 class="screen-title">Тренировка</h2>
+                <button id="workout-menu-btn" class="icon-btn">⋮</button>
+            </div>
+
+            <div class="workout-content">
+                <!-- Date Selector -->
+                <div class="date-selector">
+                    <button id="date-prev" class="date-nav-btn">‹</button>
+                    <div class="date-display">
+                        <span id="workout-date">Сегодня</span>
+                        <small id="workout-date-full"></small>
+                    </div>
+                    <button id="date-next" class="date-nav-btn">›</button>
+                </div>
+
+                <!-- Workout Stats -->
+                <div class="workout-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="workout-tonnage">0</span>
+                        <span class="stat-label">кг</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="workout-reps">0</span>
+                        <span class="stat-label">повторов</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="workout-max-weight">0</span>
+                        <span class="stat-label">макс вес</span>
+                    </div>
+                </div>
+
+                <!-- Exercises List -->
+                <div id="exercises-list" class="exercises-list">
+                    <div class="empty-state" id="empty-workout">
+                        <div class="empty-icon">💪</div>
+                        <p>Начни свою тренировку!</p>
+                        <p class="empty-hint">Добавь упражнение или суперсет</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="add-exercise-btn" class="action-btn primary">
+                        <span class="btn-icon">➕</span>
+                        Упражнение
+                    </button>
+                    <button id="add-superset-btn" class="action-btn secondary">
+                        <span class="btn-icon">🔗</span>
+                        Суперсет
+                    </button>
+                </div>
+
+                <div class="workout-actions">
+                    <button id="save-workout-btn" class="btn btn-success">💾 Сохранить</button>
+                    <button id="clear-workout-btn" class="btn btn-danger">🗑️ Очистить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Module -->
+        <div id="history-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn">← Назад</button>
+                <h2 class="screen-title">История тренировок</h2>
+            </div>
+
+            <div class="history-content">
+                <div id="history-list" class="history-list">
+                    <div class="empty-state" id="empty-history">
+                        <div class="empty-icon">📅</div>
+                        <p>История тренировок пуста</p>
+                        <p class="empty-hint">Создай свою первую тренировку</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Module -->
+        <div id="stats-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn">← Назад</button>
+                <h2 class="screen-title">Статистика</h2>
+            </div>
+
+            <div class="stats-content">
+                <!-- Overview Stats -->
+                <div class="stats-overview">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stats-total-workouts">0</div>
+                        <div class="stat-label">Тренировок</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stats-total-tonnage">0</div>
+                        <div class="stat-label">Общий тоннаж (кг)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stats-avg-tonnage">0</div>
+                        <div class="stat-label">Средний тоннаж</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stats-best-day">-</div>
+                        <div class="stat-label">Лучший день</div>
+                    </div>
+                </div>
+
+                <!-- Records Section -->
+                <div class="stats-section">
+                    <h3 class="section-title">🏆 Рекорды</h3>
+                    <div id="records-list" class="records-list">
+                        <!-- Records will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Progress Charts -->
+                <div class="stats-section">
+                    <h3 class="section-title">📈 Прогресс</h3>
+                    <div class="exercise-selector">
+                        <select id="exercise-select" class="form-select">
+                            <option value="">Выбери упражнение</option>
+                        </select>
+                    </div>
+                    <div id="progress-chart" class="chart-container">
+                        <div class="empty-chart">
+                            <div class="empty-icon">📊</div>
+                            <p>Выбери упражнение для просмотра прогресса</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay">
+        <!-- Exercise Selector Modal -->
+        <div id="exercise-modal" class="modal">
+            <div class="modal-header">
+                <h3>Выбери упражнение</h3>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="search-box">
+                    <input type="text" id="exercise-search" placeholder="Поиск упражнений..." class="form-input">
+                </div>
+                <div id="exercise-list" class="exercise-list">
+                    <!-- Exercise options will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Value Picker Modal -->
+        <div id="picker-modal" class="modal">
+            <div class="modal-header">
+                <h3 id="picker-title">Выбери значение</h3>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="picker-container">
+                    <div id="picker-wheel" class="picker-wheel">
+                        <!-- Picker values will be populated here -->
+                    </div>
+                </div>
+                <button id="picker-confirm" class="btn btn-primary">Подтвердить</button>
+            </div>
+        </div>
+
+        <!-- Workout Detail Modal -->
+        <div id="workout-detail-modal" class="modal large">
+            <div class="modal-header">
+                <h3 id="workout-detail-title">Детали тренировки</h3>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div id="workout-detail-content">
+                    <!-- Workout details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Загрузка...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/workout.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/statistics.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

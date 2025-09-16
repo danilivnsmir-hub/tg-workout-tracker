@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fitness Hub - Alpha</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/alpha.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header class="app-header alpha-header">
+            <button class="back-btn" onclick="window.history.back()">← Назад</button>
+            <h1 class="app-title">🚀 Alpha Version</h1>
+            <div class="alpha-badge">BETA</div>
+        </header>
+
+        <div class="alpha-content">
+            <div class="alpha-info">
+                <h2>🛠️ Экспериментальные функции</h2>
+                <p>Здесь тестируются новые возможности перед добавлением в основное приложение.</p>
+            </div>
+
+            <div class="feature-sections">
+                <!-- AI Training Assistant -->
+                <div class="feature-section">
+                    <h3 class="feature-title">🤖 ИИ Помощник</h3>
+                    <p class="feature-desc">Персональные рекомендации по тренировкам</p>
+                    <div class="feature-content">
+                        <div class="ai-chat" id="ai-chat">
+                            <div class="chat-messages" id="chat-messages">
+                                <div class="bot-message">
+                                    <div class="message-content">
+                                        Привет! Я твой фитнес-помощник. Расскажи о своих целях!
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chat-input">
+                                <input type="text" id="chat-input" placeholder="Напиши сообщение..." class="form-input">
+                                <button id="chat-send" class="btn btn-primary">📤</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Smart Templates -->
+                <div class="feature-section">
+                    <h3 class="feature-title">📋 Умные Шаблоны</h3>
+                    <p class="feature-desc">Готовые программы тренировок</p>
+                    <div class="feature-content">
+                        <div class="template-grid">
+                            <div class="template-card" data-template="beginner">
+                                <h4>🌱 Для новичков</h4>
+                                <p>3 дня в неделю, базовые упражнения</p>
+                                <button class="btn btn-sm">Попробовать</button>
+                            </div>
+                            <div class="template-card" data-template="strength">
+                                <h4>💪 Сила</h4>
+                                <p>Программа 5/3/1 для развития силы</p>
+                                <button class="btn btn-sm">Попробовать</button>
+                            </div>
+                            <div class="template-card" data-template="hypertrophy">
+                                <h4>🏗️ Масса</h4>
+                                <p>Высокий объем для роста мышц</p>
+                                <button class="btn btn-sm">Попробовать</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Analytics -->
+                <div class="feature-section">
+                    <h3 class="feature-title">🔬 Продвинутая Аналитика</h3>
+                    <p class="feature-desc">Детальный анализ тренировочных данных</p>
+                    <div class="feature-content">
+                        <div class="analytics-grid">
+                            <div class="analytics-card">
+                                <h4>Интенсивность</h4>
+                                <div class="intensity-meter">
+                                    <div class="meter-bar">
+                                        <div class="meter-fill" style="width: 75%"></div>
+                                    </div>
+                                    <span>75%</span>
+                                </div>
+                            </div>
+                            <div class="analytics-card">
+                                <h4>Частота тренировок</h4>
+                                <div class="frequency-chart">
+                                    <div class="freq-bar" style="height: 60%"></div>
+                                    <div class="freq-bar" style="height: 80%"></div>
+                                    <div class="freq-bar" style="height: 40%"></div>
+                                    <div class="freq-bar" style="height: 90%"></div>
+                                    <div class="freq-bar" style="height: 70%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Social Features -->
+                <div class="feature-section">
+                    <h3 class="feature-title">👥 Социальные функции</h3>
+                    <p class="feature-desc">Делись достижениями с друзьями</p>
+                    <div class="feature-content">
+                        <div class="social-actions">
+                            <button class="btn social-btn">
+                                📸 Поделиться тренировкой
+                            </button>
+                            <button class="btn social-btn">
+                                🏆 Отправить достижение
+                            </button>
+                            <button class="btn social-btn">
+                                👨‍🏫 Найти тренировочного партнера
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Experimental Tools -->
+                <div class="feature-section">
+                    <h3 class="feature-title">⚗️ Экспериментальные инструменты</h3>
+                    <p class="feature-desc">Тестовые функции в разработке</p>
+                    <div class="feature-content">
+                        <div class="experiment-grid">
+                            <div class="experiment-item">
+                                <h4>🎯 1RM Калькулятор</h4>
+                                <div class="calc-inputs">
+                                    <input type="number" placeholder="Вес" class="form-input small">
+                                    <input type="number" placeholder="Повторы" class="form-input small">
+                                    <button class="btn btn-sm">Рассчитать</button>
+                                </div>
+                                <div class="calc-result">1RM: <span id="orm-result">-</span> кг</div>
+                            </div>
+                            <div class="experiment-item">
+                                <h4>📊 Прогноз прогресса</h4>
+                                <button class="btn btn-sm">Построить прогноз</button>
+                                <div class="progress-forecast">
+                                    <small>На основе текущих данных</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Debug Panel -->
+            <div class="debug-panel">
+                <h3>🐛 Отладочная панель</h3>
+                <div class="debug-actions">
+                    <button id="clear-storage" class="btn btn-danger btn-sm">Очистить данные</button>
+                    <button id="generate-test-data" class="btn btn-secondary btn-sm">Тестовые данные</button>
+                    <button id="export-data" class="btn btn-secondary btn-sm">Экспорт данных</button>
+                </div>
+                <div class="debug-info">
+                    <small>Версия: Alpha 1.0 | Данных в хранилище: <span id="storage-size">0</span> байт</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/alpha.js"></script>
+</body>
+</html>
