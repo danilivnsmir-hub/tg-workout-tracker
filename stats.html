@@ -2,16 +2,33 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Статистика — Fitness Hub</title>
+  <title>Статистика</title>
   <link rel="stylesheet" href="assets/css/main.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>📊 Статистика</h1>
-    <p>Общая статистика, графики и рекорды.</p>
+
+    <div id="globalStats" class="card">
+      <h3>📈 Общая статистика</h3>
+      <p>Всего тренировок: <span id="totalWorkouts">0</span></p>
+      <p>Общий тоннаж: <span id="totalVolume">0</span> кг</p>
+      <p>Повторы всего: <span id="totalReps">0</span></p>
+      <p>Подходы всего: <span id="totalSets">0</span></p>
+      <p>Средний тоннаж за тренировку: <span id="avgVolume">0</span> кг</p>
+    </div>
+
+    <div id="history" class="card">
+      <h3>📅 История тренировок</h3>
+      <ul id="workoutsList"></ul>
+    </div>
+
     <a class="card" href="index.html">⬅ Назад</a>
   </div>
+
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/storage.js"></script>
+  <script src="assets/js/stats.js"></script>
 </body>
 </html>
