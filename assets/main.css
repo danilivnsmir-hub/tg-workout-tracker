@@ -178,9 +178,8 @@ h1 {
 }
 
 .superset-ex h4 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-size: 15px;
-  font-weight: 600;
   color: var(--muted);
 }
 
