@@ -253,10 +253,14 @@ saveBtn.onclick = async () => {
     const today = new Date().toISOString().split("T")[0];
     const key = "workout_" + today;
 
+    console.log("💾 Сохраняем тренировку:", key, workout);
     await setDataWithTracking(key, workout);
+    console.log("✅ Тренировка сохранена с трекингом");
+    
     showToast("Тренировка сохранена ✅");
     vibrate();
   } catch (e) {
+    console.error("❌ Ошибка сохранения:", e);
     showError(e);
   }
 };
