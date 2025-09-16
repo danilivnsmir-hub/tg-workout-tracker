@@ -242,6 +242,54 @@
         </div>
     </div>
 
+    <!-- NEW: Exercise Addition Stepper Interface -->
+    <div id="exercise-stepper" class="exercise-stepper">
+        <!-- Handle for mobile drag indicator -->
+        <div class="stepper-handle"></div>
+        
+        <!-- Header with progress and close button -->
+        <div class="stepper-header">
+            <div class="stepper-progress">
+                <div class="step-indicator">
+                    <div id="step-1-dot" class="step-dot active"></div>
+                    <span id="step-1-label">Упражнение</span>
+                </div>
+            </div>
+            
+            <h3 id="stepper-title" class="stepper-title">Выбери упражнение</h3>
+            
+            <div class="stepper-progress">
+                <div class="step-indicator">
+                    <span id="step-2-label">Параметры</span>
+                    <div id="step-2-dot" class="step-dot"></div>
+                </div>
+            </div>
+            
+            <button id="stepper-close" class="stepper-close">✕</button>
+        </div>
+        
+        <!-- Dynamic content area -->
+        <div id="stepper-content" class="stepper-content">
+            <!-- Content will be dynamically populated here -->
+        </div>
+        
+        <!-- Action buttons -->
+        <div class="stepper-actions">
+            <button id="stepper-back" class="stepper-btn secondary" style="display: none;">
+                ← Назад
+            </button>
+            <button id="stepper-cancel" class="stepper-btn secondary">
+                Отмена
+            </button>
+            <button id="stepper-next" class="stepper-btn primary" disabled>
+                Далее →
+            </button>
+        </div>
+    </div>
+
+    <!-- Background overlay for stepper -->
+    <div id="stepper-overlay" class="modal-overlay"></div>
+
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-spinner"></div>

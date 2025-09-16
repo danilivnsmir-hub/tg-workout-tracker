@@ -1,0 +1,23 @@
+127.0.0.1 - - [16/Sep/2025 18:33:27] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /styles/main.css HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /styles/components.css HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /js/components.js HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /js/config.js HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /js/storage.js HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /js/history.js HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /js/workout.js HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /js/statistics.js HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:34] "GET /js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:33:35] code 404, message File not found
+127.0.0.1 - - [16/Sep/2025 18:33:35] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [16/Sep/2025 18:34:37] "GET /mobile_test.html HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:34:37] "GET /styles/main.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Sep/2025 18:34:37] "GET /styles/components.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Sep/2025 18:34:37] "GET /js/components.js HTTP/1.1" 304 -
+127.0.0.1 - - [16/Sep/2025 18:35:20] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:35:24] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [16/Sep/2025 18:35:24] "GET /styles/components.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Sep/2025 18:35:24] "GET /js/components.js HTTP/1.1" 304 -
+127.0.0.1 - - [16/Sep/2025 18:35:24] "GET /styles/main.css HTTP/1.1" 304 -

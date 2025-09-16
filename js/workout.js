@@ -205,21 +205,16 @@ const WorkoutModule = {
     addExercise() {
         const selectedExercises = this.getSelectedExerciseNames();
         
-        Components.ExerciseSelector.show((exerciseName) => {
-            const exercise = {
-                id: Utils.generateId(),
-                name: exerciseName,
-                type: 'single',
-                sets: [{ weight: 0, reps: 0 }]
-            };
-            
+        // Use new stepper interface
+        Components.ExerciseStepper.show((exercise) => {
+            // Exercise already comes with proper parameters from stepper
             this.currentWorkout.exercises.push(exercise);
             this.markDirty();
             this.renderWorkout();
             this.updateWorkoutStats();
             
             Utils.hapticFeedback('success');
-            Utils.showSuccess(SUCCESS_MESSAGES.EXERCISE_ADDED);
+            Utils.showSuccess('Упражнение добавлено в тренировку!');
         }, selectedExercises);
     },
     

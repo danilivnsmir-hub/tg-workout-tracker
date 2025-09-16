@@ -112,13 +112,471 @@ const Components = {
         }
     },
     
-    // Exercise Selector Component
-    ExerciseSelector: {
+    // NEW: Exercise Addition Stepper Component
+    ExerciseStepper: {
+        currentStep: 1,
+        selectedExercise: null,
+        exerciseParams: {
+            weight: 20,
+            reps: 8
+        },
+        callback: null,
+        selectedExercises: [],
+        
         show(callback, selectedExercises = []) {
             this.callback = callback;
             this.selectedExercises = selectedExercises;
-            this.render();
-            Components.Modal.show('exercise-modal');
+            this.reset();
+            this.showStepper();
+            this.renderStep();
+        },
+        
+        reset() {
+            this.currentStep = 1;
+            this.selectedExercise = null;
+            this.exerciseParams = { weight: 20, reps: 8 };
+        },
+        
+        showStepper() {
+            const stepper = document.getElementById('exercise-stepper');
+            const overlay = document.getElementById('stepper-overlay');
+            
+            if (!stepper || !overlay) return;
+            
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.height = '100%';
+            
+            overlay.classList.add('active');
+            stepper.classList.add('active');
+            
+            Utils.hapticFeedback('light');
+        },
+        
+        hideStepper() {
+            const stepper = document.getElementById('exercise-stepper');
+            const overlay = document.getElementById('stepper-overlay');
+            
+            if (!stepper || !overlay) return;
+            
+            // Re-enable body scroll
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.height = '';
+            
+            overlay.classList.remove('active');
+            stepper.classList.remove('active');
+        },
+        
+        renderStep() {
+            this.updateProgress();
+            
+            if (this.currentStep === 1) {
+                this.renderExerciseSelection();
+            } else if (this.currentStep === 2) {
+                this.renderParameterSetup();
+            }
+            
+            this.updateButtons();
+        },
+        
+        updateProgress() {
+            const step1Dot = document.getElementById('step-1-dot');
+            const step2Dot = document.getElementById('step-2-dot');
+            const stepperTitle = document.getElementById('stepper-title');
+            
+            if (!step1Dot || !step2Dot || !stepperTitle) return;
+            
+            // Update step indicators
+            step1Dot.classList.toggle('active', this.currentStep >= 1);
+            step2Dot.classList.toggle('active', this.currentStep >= 2);
+            
+            // Update title
+            if (this.currentStep === 1) {
+                stepperTitle.textContent = 'Выбери упражнение';
+            } else if (this.currentStep === 2) {
+                stepperTitle.textContent = 'Настрой параметры';
+            }
+        },
+        
+        renderExerciseSelection() {
+            const content = document.getElementById('stepper-content');
+            if (!content) return;
+            
+            // Filter out already selected exercises
+            const availableExercises = EXERCISES.filter(exercise => 
+                !this.selectedExercises.includes(exercise)
+            );
+            
+            content.innerHTML = `
+                <div class="search-box" style="margin-bottom: 1rem;">
+                    <input type="text" id="step-exercise-search" placeholder="Поиск упражнений..." class="form-input">
+                </div>
+                <div id="step-exercise-list" class="step-exercise-list">
+                    ${availableExercises.map(exercise => `
+                        <div class="step-exercise-option" data-exercise="${exercise}">
+                            ${exercise}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            this.attachExerciseSelectionHandlers();
+        },
+        
+        attachExerciseSelectionHandlers() {
+            const searchInput = document.getElementById('step-exercise-search');
+            const exerciseOptions = document.querySelectorAll('.step-exercise-option');
+            
+            // Search functionality
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    this.filterExercises(e.target.value);
+                });
+                
+                // Enhanced mobile handling
+                searchInput.addEventListener('touchstart', () => {
+                    setTimeout(() => searchInput.focus(), 100);
+                }, { passive: true });
+            }
+            
+            // Exercise selection handling
+            exerciseOptions.forEach(option => {
+                this.addExerciseOptionHandling(option);
+            });
+        },
+        
+        addExerciseOptionHandling(element) {
+            const exercise = element.dataset.exercise;
+            let touchStarted = false;
+            
+            // Touch handling
+            element.addEventListener('touchstart', () => {
+                touchStarted = true;
+                element.style.transform = 'scale(0.98)';
+                element.style.transition = 'transform 0.1s ease';
+            }, { passive: true });
+            
+            element.addEventListener('touchend', () => {
+                element.style.transform = '';
+                if (touchStarted) {
+                    this.selectExercise(exercise);
+                }
+                touchStarted = false;
+            }, { passive: true });
+            
+            element.addEventListener('touchcancel', () => {
+                element.style.transform = '';
+                touchStarted = false;
+            }, { passive: true });
+            
+            // Click handling
+            element.addEventListener('click', () => this.selectExercise(exercise));
+        },
+        
+        selectExercise(exercise) {
+            this.selectedExercise = exercise;
+            
+            // Update UI to show selection
+            const options = document.querySelectorAll('.step-exercise-option');
+            options.forEach(option => {
+                option.classList.toggle('selected', option.dataset.exercise === exercise);
+            });
+            
+            Utils.hapticFeedback('selection');
+            this.updateButtons();
+        },
+        
+        filterExercises(query) {
+            const exerciseList = document.getElementById('step-exercise-list');
+            if (!exerciseList) return;
+            
+            const filteredExercises = Utils.searchExercises(query);
+            const availableExercises = filteredExercises.filter(exercise => 
+                !this.selectedExercises.includes(exercise)
+            );
+            
+            if (availableExercises.length === 0 && query.length > 0) {
+                exerciseList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">🔍</div>
+                        <div>Упражнения не найдены</div>
+                        <div style="font-size: var(--font-size-sm); margin-top: 0.5rem;">Попробуйте изменить запрос</div>
+                    </div>
+                `;
+            } else {
+                exerciseList.innerHTML = availableExercises.map(exercise => `
+                    <div class="step-exercise-option" data-exercise="${exercise}">
+                        ${exercise}
+                    </div>
+                `).join('');
+                
+                // Re-attach handlers
+                const options = document.querySelectorAll('.step-exercise-option');
+                options.forEach(option => this.addExerciseOptionHandling(option));
+            }
+        },
+        
+        renderParameterSetup() {
+            const content = document.getElementById('stepper-content');
+            if (!content) return;
+            
+            content.innerHTML = `
+                <!-- Selected Exercise Preview -->
+                <div class="selected-exercise-preview">
+                    <div class="exercise-icon">${this.selectedExercise?.charAt(0).toUpperCase() || '💪'}</div>
+                    <div>
+                        <div class="exercise-name">${this.selectedExercise || 'Упражнение'}</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+                            Настрой параметры для первого подхода
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Parameter Setup -->
+                <div class="parameter-setup">
+                    <!-- Weight Parameter -->
+                    <div class="parameter-group">
+                        <div class="parameter-label">Вес (кг)</div>
+                        <div class="parameter-picker">
+                            <div class="parameter-controls">
+                                <button class="parameter-btn" data-action="weight-inc">+</button>
+                                <button class="parameter-btn" data-action="weight-dec">-</button>
+                            </div>
+                            <div class="parameter-value-display" id="weight-display">${this.exerciseParams.weight}</div>
+                            <div class="parameter-controls">
+                                <button class="parameter-btn" data-action="weight-inc-5">+5</button>
+                                <button class="parameter-btn" data-action="weight-dec-5">-5</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reps Parameter -->
+                    <div class="parameter-group">
+                        <div class="parameter-label">Повторения</div>
+                        <div class="parameter-picker">
+                            <div class="parameter-controls">
+                                <button class="parameter-btn" data-action="reps-inc">+</button>
+                                <button class="parameter-btn" data-action="reps-dec">-</button>
+                            </div>
+                            <div class="parameter-value-display" id="reps-display">${this.exerciseParams.reps}</div>
+                            <div class="parameter-controls">
+                                <button class="parameter-btn" data-action="reps-inc-5">+5</button>
+                                <button class="parameter-btn" data-action="reps-dec-5">-5</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            this.attachParameterHandlers();
+        },
+        
+        attachParameterHandlers() {
+            const parameterButtons = document.querySelectorAll('.parameter-btn');
+            
+            parameterButtons.forEach(button => {
+                const action = button.dataset.action;
+                
+                // Touch and click handling
+                let touchStarted = false;
+                
+                button.addEventListener('touchstart', () => {
+                    touchStarted = true;
+                    button.style.transform = 'scale(0.95)';
+                }, { passive: true });
+                
+                button.addEventListener('touchend', () => {
+                    button.style.transform = '';
+                    if (touchStarted) {
+                        this.handleParameterAction(action);
+                    }
+                    touchStarted = false;
+                }, { passive: true });
+                
+                button.addEventListener('touchcancel', () => {
+                    button.style.transform = '';
+                    touchStarted = false;
+                }, { passive: true });
+                
+                button.addEventListener('click', () => this.handleParameterAction(action));
+            });
+        },
+        
+        handleParameterAction(action) {
+            const weightDisplay = document.getElementById('weight-display');
+            const repsDisplay = document.getElementById('reps-display');
+            
+            switch (action) {
+                case 'weight-inc':
+                    this.exerciseParams.weight = Math.min(this.exerciseParams.weight + 2.5, 200);
+                    break;
+                case 'weight-dec':
+                    this.exerciseParams.weight = Math.max(this.exerciseParams.weight - 2.5, 0);
+                    break;
+                case 'weight-inc-5':
+                    this.exerciseParams.weight = Math.min(this.exerciseParams.weight + 5, 200);
+                    break;
+                case 'weight-dec-5':
+                    this.exerciseParams.weight = Math.max(this.exerciseParams.weight - 5, 0);
+                    break;
+                case 'reps-inc':
+                    this.exerciseParams.reps = Math.min(this.exerciseParams.reps + 1, 50);
+                    break;
+                case 'reps-dec':
+                    this.exerciseParams.reps = Math.max(this.exerciseParams.reps - 1, 1);
+                    break;
+                case 'reps-inc-5':
+                    this.exerciseParams.reps = Math.min(this.exerciseParams.reps + 5, 50);
+                    break;
+                case 'reps-dec-5':
+                    this.exerciseParams.reps = Math.max(this.exerciseParams.reps - 5, 1);
+                    break;
+            }
+            
+            // Update displays with animation
+            if (weightDisplay) {
+                weightDisplay.style.transform = 'scale(1.1)';
+                weightDisplay.textContent = this.exerciseParams.weight;
+                setTimeout(() => {
+                    weightDisplay.style.transform = '';
+                }, 150);
+            }
+            
+            if (repsDisplay) {
+                repsDisplay.style.transform = 'scale(1.1)';
+                repsDisplay.textContent = this.exerciseParams.reps;
+                setTimeout(() => {
+                    repsDisplay.style.transform = '';
+                }, 150);
+            }
+            
+            Utils.hapticFeedback('light');
+        },
+        
+        updateButtons() {
+            const backBtn = document.getElementById('stepper-back');
+            const nextBtn = document.getElementById('stepper-next');
+            const cancelBtn = document.getElementById('stepper-cancel');
+            
+            if (!backBtn || !nextBtn || !cancelBtn) return;
+            
+            // Back button visibility
+            backBtn.style.display = this.currentStep > 1 ? 'flex' : 'none';
+            
+            // Next button state and text
+            if (this.currentStep === 1) {
+                nextBtn.textContent = 'Далее →';
+                nextBtn.disabled = !this.selectedExercise;
+            } else if (this.currentStep === 2) {
+                nextBtn.textContent = 'Добавить';
+                nextBtn.disabled = false;
+            }
+        },
+        
+        nextStep() {
+            if (this.currentStep === 1 && this.selectedExercise) {
+                this.currentStep = 2;
+                this.renderStep();
+            } else if (this.currentStep === 2) {
+                this.completeAddition();
+            }
+        },
+        
+        prevStep() {
+            if (this.currentStep > 1) {
+                this.currentStep--;
+                this.renderStep();
+            }
+        },
+        
+        completeAddition() {
+            if (!this.selectedExercise || !this.callback) return;
+            
+            // Create exercise object with parameters
+            const exercise = {
+                id: Utils.generateId(),
+                name: this.selectedExercise,
+                type: 'single',
+                sets: [{
+                    weight: this.exerciseParams.weight,
+                    reps: this.exerciseParams.reps
+                }]
+            };
+            
+            // Call the callback with the complete exercise
+            this.callback(exercise);
+            
+            // Hide stepper
+            this.hideStepper();
+            
+            Utils.hapticFeedback('success');
+            Utils.showSuccess('Упражнение добавлено!');
+        },
+        
+        init() {
+            const stepperClose = document.getElementById('stepper-close');
+            const stepperBack = document.getElementById('stepper-back');
+            const stepperNext = document.getElementById('stepper-next');
+            const stepperCancel = document.getElementById('stepper-cancel');
+            const stepperOverlay = document.getElementById('stepper-overlay');
+            
+            // Close button
+            if (stepperClose) {
+                stepperClose.addEventListener('click', () => this.hideStepper());
+                stepperClose.addEventListener('touchend', () => this.hideStepper(), { passive: true });
+            }
+            
+            // Back button
+            if (stepperBack) {
+                stepperBack.addEventListener('click', () => this.prevStep());
+                stepperBack.addEventListener('touchend', () => this.prevStep(), { passive: true });
+            }
+            
+            // Next button
+            if (stepperNext) {
+                stepperNext.addEventListener('click', () => this.nextStep());
+                stepperNext.addEventListener('touchend', () => this.nextStep(), { passive: true });
+            }
+            
+            // Cancel button
+            if (stepperCancel) {
+                stepperCancel.addEventListener('click', () => this.hideStepper());
+                stepperCancel.addEventListener('touchend', () => this.hideStepper(), { passive: true });
+            }
+            
+            // Overlay click to close
+            if (stepperOverlay) {
+                stepperOverlay.addEventListener('click', (e) => {
+                    if (e.target === stepperOverlay) {
+                        this.hideStepper();
+                    }
+                });
+            }
+            
+            // Escape key to close
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const stepper = document.getElementById('exercise-stepper');
+                    if (stepper?.classList.contains('active')) {
+                        this.hideStepper();
+                    }
+                }
+            });
+        }
+    },
+    
+    // Legacy Exercise Selector Component (kept for compatibility)
+    ExerciseSelector: {
+        show(callback, selectedExercises = []) {
+            // Redirect to new stepper interface
+            Components.ExerciseStepper.show((exercise) => {
+                // Legacy callback expects just the exercise name
+                callback(exercise.name);
+            }, selectedExercises);
         },
         
         render() {
@@ -658,6 +1116,7 @@ const Components = {
     // Initialize all components
     init() {
         this.Modal.init();
+        this.ExerciseStepper.init();
         this.ExerciseSelector.init();
         this.ValuePicker.init();
     }
