@@ -43,23 +43,26 @@ const exercisesList = [
 // ====== WEIGHT & REPS OPTIONS ======
 function generateWeights() {
   const weights = [];
-  // до 20 кг шаг 0.5
-  for (let w = 0; w <= 20; w += 0.5) {
-    weights.push(w);
-  }
-  // от 22.5 до 300 шаг 2.5
-  for (let w = 22.5; w <= 300; w += 2.5) {
-    weights.push(w);
-  }
+  for (let w = 0; w <= 20; w += 0.5) weights.push(w);
+  for (let w = 22.5; w <= 300; w += 2.5) weights.push(w);
   return weights;
 }
-
 function generateReps() {
   return Array.from({ length: 50 }, (_, i) => i + 1);
 }
-
 const weightOptions = generateWeights();
 const repsOptions = generateReps();
+
+// ====== AUTOSAVE DRAFT ======
+const draftKey = "draftWorkout";
+
+function saveDraft() {
+  setData(draftKey, workout).catch(console.error);
+}
+function triggerSave() {
+  saveDraft();
+}
+window.addEventListener("beforeunload", saveDraft);
 
 // ====== STATS ======
 function updateStats() {
@@ -98,7 +101,6 @@ function renderWorkout() {
     blockDiv.className = "card";
 
     if (block.type === "single") {
-      // одиночное упражнение
       const exerciseOptions = exercisesList.map(name => {
         const selected = block.name === name ? "selected" : "";
         return `<option value="${name}" ${selected}>${name}</option>`;
@@ -119,7 +121,9 @@ function renderWorkout() {
       `).join("");
 
       blockDiv.innerHTML = `
-        <h3>Одиночное упражнение</h3>
+        <h3>Одиночное упражнение 
+          <button onclick="removeBlock(${blockIdx})" class="remove-btn">✖</button>
+        </h3>
         <select onchange="updateExerciseName(${blockIdx}, null, this.value)">
           <option value="">-- выбрать упражнение --</option>
           ${exerciseOptions}
@@ -129,7 +133,9 @@ function renderWorkout() {
       `;
 
     } else if (block.type === "superset") {
-      blockDiv.innerHTML = `<h3>🔥 Суперсет</h3>`;
+      blockDiv.innerHTML = `<h3>🔥 Суперсет 
+        <button onclick="removeBlock(${blockIdx})" class="remove-btn">✖</button>
+      </h3>`;
       block.exercises.forEach((ex, exIdx) => {
         const exerciseOptions = exercisesList.map(name => {
           const selected = ex.name === name ? "selected" : "";
@@ -174,6 +180,7 @@ addExerciseBtn.onclick = () => {
   workout.push({ type: "single", name: "", sets: [{ weight: 0, reps: 1 }] });
   renderWorkout();
   vibrate();
+  triggerSave();
 };
 
 addSupersetBtn.onclick = () => {
@@ -186,11 +193,12 @@ addSupersetBtn.onclick = () => {
   });
   renderWorkout();
   vibrate();
+  triggerSave();
 };
 
 function addSet(blockIdx, exIdx) {
   if (workout[blockIdx].type === "single") {
-    const last = workout[blockIdx].sets[workout[blockIdx].sets.length - 1];
+    const last = workout[blockIdx].sets.slice(-1)[0];
     workout[blockIdx].sets.push({ weight: last?.weight || 0, reps: last?.reps || 1 });
   } else {
     const last = workout[blockIdx].exercises[exIdx].sets.slice(-1)[0];
@@ -198,6 +206,7 @@ function addSet(blockIdx, exIdx) {
   }
   renderWorkout();
   vibrate();
+  triggerSave();
 }
 
 function removeSet(blockIdx, exIdx, sIdx) {
@@ -208,6 +217,14 @@ function removeSet(blockIdx, exIdx, sIdx) {
   }
   renderWorkout();
   vibrate();
+  triggerSave();
+}
+
+function removeBlock(blockIdx) {
+  workout.splice(blockIdx, 1);
+  renderWorkout();
+  vibrate();
+  triggerSave();
 }
 
 function updateExerciseName(blockIdx, exIdx, val) {
@@ -217,6 +234,7 @@ function updateExerciseName(blockIdx, exIdx, val) {
   } else {
     workout[blockIdx].exercises[exIdx].name = cleanVal;
   }
+  triggerSave();
 }
 
 function updateSet(blockIdx, exIdx, sIdx, field, val) {
@@ -226,6 +244,7 @@ function updateSet(blockIdx, exIdx, sIdx, field, val) {
     workout[blockIdx].exercises[exIdx].sets[sIdx][field] = Number(val);
   }
   updateStats();
+  triggerSave();
 }
 
 // ====== SAVE & CLEAR ======
@@ -250,19 +269,24 @@ clearBtn.onclick = async () => {
     const today = new Date().toISOString().split("T")[0];
     const key = "workout_" + today;
     await removeData(key);
+    await removeData(draftKey);
     showToast("Очищено 🗑");
     vibrate();
   }
 };
 
-// ====== RESTORE DRAFT ======
+// ====== RESTORE WORKOUT OR DRAFT ======
 (async () => {
   try {
     const today = new Date().toISOString().split("T")[0];
-    const key = "workout_" + today;
+    const workoutKey = "workout_" + today;
 
-    const data = await getData(key, []);
-    workout = data;
+    let data = await getData(workoutKey, null);
+    if (!data) {
+      data = await getData(draftKey, []);
+    }
+
+    workout = data || [];
     renderWorkout();
   } catch (e) {
     console.error("Ошибка загрузки тренировки:", e);
