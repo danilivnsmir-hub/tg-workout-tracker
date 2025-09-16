@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Tracker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💪 Workout Tracker</h1>
+            <div class="sync-status" id="syncStatus">
+                <span class="status-indicator" id="statusIndicator">●</span>
+                <span id="statusText">Готов</span>
+            </div>
+        </header>
+
+        <div class="navigation">
+            <a href="workout.html" class="nav-card">
+                <div class="card">
+                    <div class="card-icon">🏋️‍♂️</div>
+                    <h3>Тренировки</h3>
+                    <p>Записать новую тренировку</p>
+                </div>
+            </a>
+
+            <a href="stats.html" class="nav-card">
+                <div class="card">
+                    <div class="card-icon">📊</div>
+                    <h3>Статистика</h3>
+                    <p>Посмотреть прогресс</p>
+                </div>
+            </a>
+
+            <a href="food.html" class="nav-card">
+                <div class="card">
+                    <div class="card-icon">🥗</div>
+                    <h3>Питание</h3>
+                    <p>Трекер питания</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="recent-workouts" id="recentWorkouts">
+            <h3>Последние тренировки</h3>
+            <div id="workoutsList"></div>
+        </div>
+    </div>
+
+    <script src="assets/js/storage.js"></script>
+    <script src="assets/js/ui.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
