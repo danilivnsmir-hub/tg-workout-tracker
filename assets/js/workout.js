@@ -6,6 +6,25 @@ const clearBtn = document.getElementById("clearWorkout");
 
 let workout = [];
 
+// ====== STATS ======
+function updateStats() {
+  let volume = 0;
+  let reps = 0;
+  let max = 0;
+
+  workout.forEach(ex => {
+    ex.sets.forEach(s => {
+      volume += s.weight * s.reps;
+      reps += s.reps;
+      if (s.weight > max) max = s.weight;
+    });
+  });
+
+  document.getElementById("statVolume").textContent = volume;
+  document.getElementById("statReps").textContent = reps;
+  document.getElementById("statMax").textContent = max;
+}
+
 // ====== RENDER ======
 function renderWorkout() {
   workoutDiv.innerHTML = "";
@@ -34,12 +53,15 @@ function renderWorkout() {
     `;
     workoutDiv.appendChild(exDiv);
   });
+
+  updateStats(); // пересчёт статистики
 }
 
 // ====== ACTIONS ======
 addExerciseBtn.onclick = () => {
   workout.push({ name: "", sets: [{ weight: 0, reps: 0 }] });
   renderWorkout();
+  vibrate();
 };
 
 function addSet(exIdx) {
@@ -49,11 +71,13 @@ function addSet(exIdx) {
     reps: last?.reps || 0,
   });
   renderWorkout();
+  vibrate();
 }
 
 function removeSet(exIdx, sIdx) {
   workout[exIdx].sets.splice(sIdx, 1);
   renderWorkout();
+  vibrate();
 }
 
 function updateExerciseName(exIdx, val) {
@@ -62,15 +86,21 @@ function updateExerciseName(exIdx, val) {
 
 function updateSet(exIdx, sIdx, field, val) {
   workout[exIdx].sets[sIdx][field] = Number(val);
+  updateStats(); // обновляем статистику при изменении
 }
 
 // ====== SAVE & CLEAR ======
 saveBtn.onclick = async () => {
-  const today = new Date().toISOString().split("T")[0];
-  const key = "workout_" + today;
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const key = "workout_" + today;
 
-  await setData(key, workout);
-  showToast("Тренировка сохранена ✅");
+    await setData(key, workout);
+    showToast("Тренировка сохранена ✅");
+    vibrate();
+  } catch (e) {
+    showError(e);
+  }
 };
 
 clearBtn.onclick = async () => {
@@ -82,15 +112,20 @@ clearBtn.onclick = async () => {
     const key = "workout_" + today;
     await removeData(key);
     showToast("Очищено 🗑");
+    vibrate();
   }
 };
 
 // ====== RESTORE DRAFT ======
 (async () => {
-  const today = new Date().toISOString().split("T")[0];
-  const key = "workout_" + today;
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const key = "workout_" + today;
 
-  const data = await getData(key, []);
-  workout = data;
-  renderWorkout();
+    const data = await getData(key, []);
+    workout = data;
+    renderWorkout();
+  } catch (e) {
+    console.error("Ошибка загрузки тренировки:", e);
+  }
 })();
