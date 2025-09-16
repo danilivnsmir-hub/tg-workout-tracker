@@ -33,11 +33,17 @@ async function removeData(key) {
 // ====== GET ALL KEYS ======
 async function getAllKeys() {
   try {
-    const result = await window.Telegram.WebApp.CloudStorage.getKeys();
-    return result || [];
+    // если поддерживается CloudStorage.getKeys()
+    if (window.Telegram?.WebApp?.CloudStorage?.getKeys) {
+      const keys = await window.Telegram.WebApp.CloudStorage.getKeys();
+      if (keys && keys.length > 0) {
+        return keys;
+      }
+    }
+    // fallback: если метод не сработал — берём вручную сохранённый список
+    return await getData("_keysList", []);
   } catch (error) {
     console.error("Ошибка получения ключей:", error);
-    // Fallback: если getKeys() не поддерживается, используем список ключей
     return await getData("_keysList", []);
   }
 }
@@ -45,7 +51,8 @@ async function getAllKeys() {
 // ====== KEY TRACKING (fallback) ======
 async function trackKey(key) {
   try {
-    const keysList = await getData("_keysList", []);
+    let keysList = await getData("_keysList", []);
+    if (!Array.isArray(keysList)) keysList = [];
     if (!keysList.includes(key)) {
       keysList.push(key);
       await setData("_keysList", keysList);
@@ -57,7 +64,8 @@ async function trackKey(key) {
 
 async function untrackKey(key) {
   try {
-    const keysList = await getData("_keysList", []);
+    let keysList = await getData("_keysList", []);
+    if (!Array.isArray(keysList)) keysList = [];
     const filtered = keysList.filter(k => k !== key);
     await setData("_keysList", filtered);
   } catch (error) {
