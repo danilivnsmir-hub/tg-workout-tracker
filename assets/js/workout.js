@@ -101,6 +101,21 @@ class WorkoutManager {
         document.getElementById('cancelExerciseBtn').addEventListener('click', () => {
             this.closeExerciseModal();
         });
+
+        // Обработчик изменения выпадающего списка упражнений
+        document.getElementById('exerciseSelect').addEventListener('change', (e) => {
+            const exerciseNameInput = document.getElementById('exerciseName');
+            if (e.target.value === 'Другое') {
+                exerciseNameInput.style.display = 'block';
+                exerciseNameInput.focus();
+            } else {
+                exerciseNameInput.style.display = 'none';
+                exerciseNameInput.value = '';
+                
+                // Загружаем последние веса для выбранного упражнения
+                this.loadLastWeightsForExercise(e.target.value);
+            }
+        });
     }
 
     setupUI() {
@@ -113,8 +128,13 @@ class WorkoutManager {
 
     showExerciseModal() {
         // Очищаем модальное окно
+        document.getElementById('exerciseSelect').value = '';
         document.getElementById('exerciseName').value = '';
+        document.getElementById('exerciseName').style.display = 'none';
         document.getElementById('setsList').innerHTML = '';
+        
+        // Обновляем список упражнений на основе истории
+        this.updateExerciseList();
         
         // Добавляем первый подход
         this.addSetInput();
@@ -137,7 +157,17 @@ class WorkoutManager {
             return;
         }
 
-        const exerciseName = document.getElementById('exerciseName').value.trim();
+        // Получаем название упражнения из выпадающего списка или текстового поля
+        const exerciseSelect = document.getElementById('exerciseSelect').value;
+        const exerciseNameInput = document.getElementById('exerciseName').value.trim();
+        
+        let exerciseName = '';
+        if (exerciseSelect && exerciseSelect !== 'Другое') {
+            exerciseName = exerciseSelect;
+        } else if (exerciseSelect === 'Другое' && exerciseNameInput) {
+            exerciseName = exerciseNameInput;
+        }
+
         const sets = window.ui.getCurrentSets();
 
         // Создаем упражнение
@@ -259,6 +289,148 @@ class WorkoutManager {
             this.renderExercises();
             
             window.ui.showToast('Тренировка очищена', 'info');
+        }
+    }
+
+    // Обновление списка упражнений на основе истории
+    async updateExerciseList() {
+        try {
+            const workouts = await window.workoutStorage.getData('workouts') || [];
+            const exerciseSelect = document.getElementById('exerciseSelect');
+            
+            // Базовые упражнения
+            const baseExercises = [
+                'Жим лежа', 'Приседания', 'Становая тяга', 'Жим стоя',
+                'Подтягивания', 'Отжимания', 'Жим гантелей', 'Тяга штанги',
+                'Разводка гантелей', 'Бицепс со штангой', 'Трицепс на блоке', 'Планка'
+            ];
+            
+            // Собираем статистику упражнений пользователя
+            const exerciseStats = {};
+            workouts.forEach(workout => {
+                workout.exercises.forEach(exercise => {
+                    const name = exercise.name;
+                    if (!exerciseStats[name]) {
+                        exerciseStats[name] = { name, count: 0, lastUsed: new Date(workout.date) };
+                    }
+                    exerciseStats[name].count++;
+                    
+                    const workoutDate = new Date(workout.date);
+                    if (workoutDate > exerciseStats[name].lastUsed) {
+                        exerciseStats[name].lastUsed = workoutDate;
+                    }
+                });
+            });
+            
+            // Сортируем упражнения пользователя по частоте использования
+            const userExercises = Object.values(exerciseStats)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5) // Топ 5 упражнений
+                .map(stat => stat.name);
+            
+            // Объединяем списки, исключая дубликаты
+            const allExercises = [...new Set([...userExercises, ...baseExercises])];
+            
+            // Обновляем select
+            const currentValue = exerciseSelect.value;
+            exerciseSelect.innerHTML = '<option value="">Выберите упражнение...</option>';
+            
+            // Добавляем упражнения пользователя с пометкой
+            if (userExercises.length > 0) {
+                const userGroup = document.createElement('optgroup');
+                userGroup.label = 'Ваши упражнения';
+                userExercises.forEach(exercise => {
+                    const option = document.createElement('option');
+                    option.value = exercise;
+                    option.textContent = `${exercise} (${exerciseStats[exercise].count}×)`;
+                    userGroup.appendChild(option);
+                });
+                exerciseSelect.appendChild(userGroup);
+            }
+            
+            // Добавляем базовые упражнения
+            const baseGroup = document.createElement('optgroup');
+            baseGroup.label = 'Популярные упражнения';
+            baseExercises.forEach(exercise => {
+                if (!userExercises.includes(exercise)) {
+                    const option = document.createElement('option');
+                    option.value = exercise;
+                    option.textContent = exercise;
+                    baseGroup.appendChild(option);
+                }
+            });
+            exerciseSelect.appendChild(baseGroup);
+            
+            // Добавляем опцию "Другое"
+            const otherOption = document.createElement('option');
+            otherOption.value = 'Другое';
+            otherOption.textContent = 'Другое...';
+            exerciseSelect.appendChild(otherOption);
+            
+            // Восстанавливаем выбранное значение
+            exerciseSelect.value = currentValue;
+            
+        } catch (error) {
+            console.error('Ошибка обновления списка упражнений:', error);
+        }
+    }
+
+    // Загрузка последних весов для упражнения
+    async loadLastWeightsForExercise(exerciseName) {
+        try {
+            const workouts = await window.workoutStorage.getData('workouts') || [];
+            
+            // Находим последнее выполнение этого упражнения
+            let lastExercise = null;
+            for (let i = workouts.length - 1; i >= 0; i--) {
+                const workout = workouts[i];
+                const foundExercise = workout.exercises.find(ex => 
+                    ex.name.toLowerCase() === exerciseName.toLowerCase()
+                );
+                
+                if (foundExercise) {
+                    lastExercise = foundExercise;
+                    break;
+                }
+            }
+            
+            // Если нашли последнее выполнение, обновляем веса в подходах
+            if (lastExercise && lastExercise.sets.length > 0) {
+                const setsList = document.getElementById('setsList');
+                const existingSets = setsList.querySelectorAll('.set-input');
+                
+                // Обновляем существующие подходы
+                existingSets.forEach((setElement, index) => {
+                    if (index < lastExercise.sets.length) {
+                        const lastSet = lastExercise.sets[index];
+                        const repsSelect = setElement.querySelector('.reps-input');
+                        const weightSelect = setElement.querySelector('.weight-input');
+                        
+                        if (repsSelect) repsSelect.value = lastSet.reps;
+                        if (weightSelect) weightSelect.value = lastSet.weight;
+                    }
+                });
+                
+                // Добавляем дополнительные подходы если нужно
+                while (existingSets.length < lastExercise.sets.length) {
+                    this.addSetInput();
+                    const newSetElement = setsList.lastElementChild;
+                    const setIndex = existingSets.length + (setsList.querySelectorAll('.set-input').length - existingSets.length) - 1;
+                    
+                    if (setIndex < lastExercise.sets.length) {
+                        const lastSet = lastExercise.sets[setIndex];
+                        const repsSelect = newSetElement.querySelector('.reps-input');
+                        const weightSelect = newSetElement.querySelector('.weight-input');
+                        
+                        if (repsSelect) repsSelect.value = lastSet.reps;
+                        if (weightSelect) weightSelect.value = lastSet.weight;
+                    }
+                }
+                
+                window.ui.showToast(`Загружены данные из последней тренировки`, 'info');
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки последних весов:', error);
         }
     }
 

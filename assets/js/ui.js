@@ -189,9 +189,12 @@ class UIManager {
 
     // Валидация формы
     validateExerciseForm() {
-        const name = document.getElementById('exerciseName').value.trim();
-        if (!name) {
-            this.showToast('Введите название упражнения', 'warning');
+        const exerciseSelect = document.getElementById('exerciseSelect').value;
+        const exerciseNameInput = document.getElementById('exerciseName').value.trim();
+        
+        // Проверяем, что упражнение выбрано или введено
+        if (!exerciseSelect || (exerciseSelect === 'Другое' && !exerciseNameInput)) {
+            this.showToast('Выберите или введите название упражнения', 'warning');
             return false;
         }
 
@@ -209,8 +212,11 @@ class UIManager {
         const sets = [];
 
         setElements.forEach(setElement => {
-            const reps = parseInt(setElement.querySelector('.reps-input').value) || 0;
-            const weight = parseFloat(setElement.querySelector('.weight-input').value) || 0;
+            const repsSelect = setElement.querySelector('.reps-input');
+            const weightSelect = setElement.querySelector('.weight-input');
+            
+            const reps = parseInt(repsSelect.value) || 0;
+            const weight = parseFloat(weightSelect.value) || 0;
             
             if (reps > 0) {
                 sets.push({ reps, weight });
@@ -224,15 +230,29 @@ class UIManager {
     createSetInput() {
         const setDiv = document.createElement('div');
         setDiv.className = 'set-input';
+        
+        // Создаем опции для повторений (1-50)
+        let repsOptions = '<option value="">Выберите...</option>';
+        for (let i = 1; i <= 50; i++) {
+            const selected = i === 10 ? 'selected' : '';
+            repsOptions += `<option value="${i}" ${selected}>${i}</option>`;
+        }
+        
+        // Создаем опции для весов (0-200кг с шагом 2.5кг)
+        let weightOptions = '<option value="0" selected>Без веса</option>';
+        for (let i = 2.5; i <= 200; i += 2.5) {
+            weightOptions += `<option value="${i}">${i} кг</option>`;
+        }
+        
         setDiv.innerHTML = `
             <div class="form-row">
                 <div class="form-group">
                     <label>Повторения:</label>
-                    <input type="number" class="reps-input" min="1" max="100" value="10">
+                    <select class="reps-input">${repsOptions}</select>
                 </div>
                 <div class="form-group">
-                    <label>Вес (кг):</label>
-                    <input type="number" class="weight-input" min="0" step="0.5" value="0">
+                    <label>Вес:</label>
+                    <select class="weight-input">${weightOptions}</select>
                 </div>
                 <button type="button" class="btn-icon remove-set">×</button>
             </div>
