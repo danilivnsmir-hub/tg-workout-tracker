@@ -870,11 +870,204 @@
     font-family: inherit;
 }
 
-/* Responsive Design */
-@media (max-width: 480px) {
+/* Enhanced Mobile Responsive Design */
+
+/* Tablet Portrait: 768px and down */
+@media (max-width: 768px) {
     .modal {
+        width: 90vw;
+        max-width: none;
+        max-height: 85vh;
+        margin: 0;
+        border-radius: var(--radius-xl);
+    }
+    
+    .modal.large {
         width: 95vw;
-        margin: 0 2.5vw;
+        max-height: 90vh;
+    }
+    
+    .modal-header {
+        padding: var(--spacing-lg);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--bg-glass);
+    }
+    
+    .modal-content {
+        padding: var(--spacing-lg);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+    
+    .exercise-list {
+        max-height: 50vh;
+    }
+    
+    .picker-wheel {
+        max-height: 40vh;
+        width: 140px;
+        padding: var(--spacing-lg) 0;
+    }
+    
+    .picker-option {
+        min-height: 56px;
+        min-width: 100px;
+        font-size: var(--font-size-xl);
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-xs);
+    }
+    
+    .modal-close {
+        width: 44px;
+        height: 44px;
+        font-size: var(--font-size-lg);
+    }
+    
+    .exercise-option {
+        min-height: 56px;
+        padding: var(--spacing-lg);
+        font-size: var(--font-size-lg);
+    }
+    
+    .btn {
+        min-height: 52px;
+        font-size: var(--font-size-lg);
+        padding: var(--spacing-lg) var(--spacing-xl);
+    }
+}
+
+/* Mobile Portrait: 480px and down */
+@media (max-width: 480px) {
+    .modal-overlay {
+        padding: var(--spacing-md);
+        align-items: flex-end;
+    }
+    
+    .modal {
+        width: 100vw;
+        max-width: none;
+        max-height: 90vh;
+        margin: 0;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        transform: translateY(100%);
+        animation: slideUpModal 0.3s ease-out forwards;
+    }
+    
+    .modal-overlay.active .modal {
+        transform: translateY(0);
+    }
+    
+    .modal.large {
+        width: 100vw;
+        max-height: 95vh;
+    }
+    
+    .modal-header {
+        padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    
+    .modal-content {
+        padding: var(--spacing-md) var(--spacing-lg) var(--spacing-xl);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .exercise-list {
+        max-height: 50vh;
+        flex: 1;
+    }
+    
+    .picker-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-xl) 0;
+    }
+    
+    .picker-wheel {
+        max-height: 45vh;
+        width: 160px;
+        padding: var(--spacing-xl) 0;
+        gap: var(--spacing-md);
+    }
+    
+    .picker-option {
+        min-height: 60px;
+        min-width: 120px;
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        padding: var(--spacing-lg) var(--spacing-xl);
+        border-width: 3px;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .picker-option:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+    
+    .picker-option.selected {
+        transform: scale(1.15);
+        min-height: 68px;
+        font-size: var(--font-size-2xl);
+        z-index: 2;
+        position: relative;
+    }
+    
+    .modal-close {
+        width: 48px;
+        height: 48px;
+        font-size: var(--font-size-xl);
+        border-width: 2px;
+    }
+    
+    .exercise-option {
+        min-height: 60px;
+        padding: var(--spacing-lg) var(--spacing-xl);
+        font-size: var(--font-size-lg);
+        border-width: 2px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .exercise-option:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+    
+    .btn {
+        min-height: 60px;
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        padding: var(--spacing-xl);
+        border-width: 2px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .btn:active {
+        transform: scale(0.96);
+        transition: transform 0.1s ease;
+    }
+    
+    .search-box {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .form-input {
+        min-height: 56px;
+        font-size: var(--font-size-lg);
+        padding: var(--spacing-lg) var(--spacing-xl);
+        border-width: 2px;
+        touch-action: manipulation;
     }
     
     .workout-stats {
@@ -884,10 +1077,12 @@
     .action-buttons {
         flex-direction: column;
         padding: 0 var(--spacing-md) var(--spacing-md);
+        gap: var(--spacing-md);
     }
     
     .workout-actions {
         flex-direction: column;
+        gap: var(--spacing-md);
     }
     
     .stats-overview {
@@ -901,6 +1096,78 @@
     
     .set-input-group .set-unit {
         display: none;
+    }
+}
+
+/* Extra small mobile: 360px and down */
+@media (max-width: 360px) {
+    .modal-overlay {
+        padding: var(--spacing-xs);
+    }
+    
+    .modal-content {
+        padding: var(--spacing-sm) var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .picker-wheel {
+        width: 140px;
+        gap: var(--spacing-sm);
+    }
+    
+    .picker-option {
+        min-height: 56px;
+        min-width: 100px;
+        font-size: var(--font-size-lg);
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .picker-option.selected {
+        min-height: 64px;
+        transform: scale(1.1);
+        font-size: var(--font-size-xl);
+    }
+    
+    .exercise-option {
+        min-height: 56px;
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .btn {
+        min-height: 56px;
+        font-size: var(--font-size-lg);
+        padding: var(--spacing-lg);
+    }
+}
+
+/* Animation for mobile modal slide up */
+@keyframes slideUpModal {
+    from {
+        transform: translateY(100%);
+        opacity: 0.8;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Landscape Mobile Orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+    .modal {
+        max-height: 95vh;
+        width: 95vw;
+    }
+    
+    .modal-content {
+        max-height: calc(95vh - 80px);
+    }
+    
+    .exercise-list {
+        max-height: calc(95vh - 200px);
+    }
+    
+    .picker-wheel {
+        max-height: calc(95vh - 250px);
     }
 }
 

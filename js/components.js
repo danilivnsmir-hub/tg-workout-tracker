@@ -15,8 +15,14 @@ const Components = {
             overlay.classList.add('active');
             modal.classList.add('active');
             
-            // Prevent body scroll
+            // Prevent body scroll and handle mobile viewport
             document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.height = '100%';
+            
+            // Prevent zoom on double tap for iOS
+            modal.addEventListener('touchstart', this.preventZoom, { passive: false });
             
             Utils.hapticFeedback('light');
         },
@@ -29,17 +35,52 @@ const Components = {
             
             // Re-enable body scroll
             document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.height = '';
             
             // Remove active class from all modals
             const modals = overlay.querySelectorAll('.modal');
-            modals.forEach(modal => modal.classList.remove('active'));
+            modals.forEach(modal => {
+                modal.classList.remove('active');
+                modal.removeEventListener('touchstart', this.preventZoom);
+            });
+        },
+        
+        preventZoom(e) {
+            const t2 = e.timeStamp;
+            const t1 = e.currentTarget.dataset.lastTouch || t2;
+            const dt = t2 - t1;
+            const fingers = e.touches.length;
+            e.currentTarget.dataset.lastTouch = t2;
+            
+            if (!dt || dt > 500 || fingers > 1) return; // not double tap
+            
+            e.preventDefault();
+            e.target.click();
         },
         
         init() {
             const overlay = document.getElementById('modal-overlay');
             if (!overlay) return;
             
-            // Close modal when clicking overlay
+            // Enhanced touch handling for overlay
+            let touchStarted = false;
+            
+            overlay.addEventListener('touchstart', (e) => {
+                if (e.target === overlay) {
+                    touchStarted = true;
+                }
+            }, { passive: true });
+            
+            overlay.addEventListener('touchend', (e) => {
+                if (e.target === overlay && touchStarted) {
+                    this.hide();
+                }
+                touchStarted = false;
+            }, { passive: true });
+            
+            // Close modal when clicking overlay (mouse)
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) {
                     this.hide();
@@ -49,6 +90,16 @@ const Components = {
             // Close modal when clicking close buttons
             const closeButtons = overlay.querySelectorAll('.modal-close');
             closeButtons.forEach(button => {
+                // Enhanced touch handling for close button
+                button.addEventListener('touchstart', () => {
+                    button.style.transform = 'scale(0.9)';
+                }, { passive: true });
+                
+                button.addEventListener('touchend', () => {
+                    button.style.transform = '';
+                    this.hide();
+                }, { passive: true });
+                
                 button.addEventListener('click', () => this.hide());
             });
             
@@ -85,9 +136,41 @@ const Components = {
                 const option = document.createElement('div');
                 option.className = 'exercise-option';
                 option.textContent = exercise;
-                option.addEventListener('click', () => this.selectExercise(exercise));
+                
+                // Enhanced touch handling for exercise options
+                this.addExerciseOptionTouchHandling(option, exercise);
+                
                 exerciseList.appendChild(option);
             });
+        },
+        
+        addExerciseOptionTouchHandling(element, exercise) {
+            let touchStarted = false;
+            
+            // Touch handling
+            element.addEventListener('touchstart', (e) => {
+                touchStarted = true;
+                element.style.transform = 'scale(0.98)';
+                element.style.transition = 'transform 0.1s ease';
+            }, { passive: true });
+            
+            element.addEventListener('touchend', (e) => {
+                element.style.transform = '';
+                
+                if (touchStarted) {
+                    this.selectExercise(exercise);
+                }
+                
+                touchStarted = false;
+            }, { passive: true });
+            
+            element.addEventListener('touchcancel', (e) => {
+                element.style.transform = '';
+                touchStarted = false;
+            }, { passive: true });
+            
+            // Click fallback for desktop
+            element.addEventListener('click', () => this.selectExercise(exercise));
         },
         
         selectExercise(exercise) {
@@ -102,8 +185,40 @@ const Components = {
             const searchInput = document.getElementById('exercise-search');
             if (!searchInput) return;
             
+            // Input event for real-time filtering
             searchInput.addEventListener('input', (e) => {
                 this.filterExercises(e.target.value);
+            });
+            
+            // Enhanced touch handling for search input
+            searchInput.addEventListener('touchstart', () => {
+                // Ensure input is focused properly on mobile
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 100);
+            }, { passive: true });
+            
+            // Handle virtual keyboard on mobile
+            searchInput.addEventListener('focus', () => {
+                // Scroll modal content to keep input visible when keyboard opens
+                setTimeout(() => {
+                    const modalContent = searchInput.closest('.modal-content');
+                    if (modalContent) {
+                        searchInput.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                        });
+                    }
+                }, 300); // Wait for keyboard animation
+            });
+            
+            // Clear search on escape
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    this.filterExercises('');
+                    searchInput.blur();
+                }
             });
         },
         
@@ -117,13 +232,31 @@ const Components = {
             );
             
             exerciseList.innerHTML = '';
-            availableExercises.forEach(exercise => {
-                const option = document.createElement('div');
-                option.className = 'exercise-option';
-                option.textContent = exercise;
-                option.addEventListener('click', () => this.selectExercise(exercise));
-                exerciseList.appendChild(option);
-            });
+            
+            if (availableExercises.length === 0 && query.length > 0) {
+                // Show "no results" message
+                const noResultsDiv = document.createElement('div');
+                noResultsDiv.className = 'no-results-message';
+                noResultsDiv.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">🔍</div>
+                        <div>Упражнения не найдены</div>
+                        <div style="font-size: var(--font-size-sm); margin-top: 0.5rem;">Попробуйте изменить запрос</div>
+                    </div>
+                `;
+                exerciseList.appendChild(noResultsDiv);
+            } else {
+                availableExercises.forEach(exercise => {
+                    const option = document.createElement('div');
+                    option.className = 'exercise-option';
+                    option.textContent = exercise;
+                    
+                    // Add enhanced touch handling
+                    this.addExerciseOptionTouchHandling(option, exercise);
+                    
+                    exerciseList.appendChild(option);
+                });
+            }
         }
     },
     
@@ -151,7 +284,9 @@ const Components = {
                 const optionElement = document.createElement('div');
                 optionElement.className = 'picker-option';
                 optionElement.textContent = option;
-                optionElement.addEventListener('click', () => this.selectValue(option));
+                
+                // Enhanced touch handling
+                this.addTouchHandling(optionElement, option);
                 
                 if (option === this.currentValue) {
                     optionElement.classList.add('selected');
@@ -166,6 +301,88 @@ const Components = {
                 
                 wheel.appendChild(optionElement);
             });
+            
+            // Add scroll wheel functionality for desktop
+            this.addWheelScrolling(wheel);
+        },
+        
+        addTouchHandling(element, value) {
+            let touchStartTime = 0;
+            let touchStartY = 0;
+            let isTouching = false;
+            
+            // Touch start
+            element.addEventListener('touchstart', (e) => {
+                touchStartTime = Date.now();
+                touchStartY = e.touches[0].clientY;
+                isTouching = true;
+                element.style.transform = 'scale(0.95)';
+                element.style.transition = 'transform 0.1s ease';
+            }, { passive: true });
+            
+            // Touch move - cancel selection if moved too much
+            element.addEventListener('touchmove', (e) => {
+                if (!isTouching) return;
+                
+                const touchY = e.touches[0].clientY;
+                const deltaY = Math.abs(touchY - touchStartY);
+                
+                if (deltaY > 10) { // Moved too much, cancel
+                    isTouching = false;
+                    element.style.transform = '';
+                }
+            }, { passive: true });
+            
+            // Touch end
+            element.addEventListener('touchend', (e) => {
+                element.style.transform = '';
+                
+                if (isTouching) {
+                    const touchEndTime = Date.now();
+                    const touchDuration = touchEndTime - touchStartTime;
+                    
+                    // Only select if touch was quick and didn't move much
+                    if (touchDuration < 300) {
+                        this.selectValue(value);
+                    }
+                }
+                
+                isTouching = false;
+            }, { passive: true });
+            
+            // Click fallback for desktop
+            element.addEventListener('click', () => this.selectValue(value));
+        },
+        
+        addWheelScrolling(wheel) {
+            let isScrolling = false;
+            
+            wheel.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                
+                if (isScrolling) return;
+                isScrolling = true;
+                
+                const delta = e.deltaY;
+                const currentIndex = this.options.indexOf(this.currentValue);
+                let newIndex;
+                
+                if (delta > 0) {
+                    // Scroll down - next option
+                    newIndex = Math.min(currentIndex + 1, this.options.length - 1);
+                } else {
+                    // Scroll up - previous option
+                    newIndex = Math.max(currentIndex - 1, 0);
+                }
+                
+                if (newIndex !== currentIndex) {
+                    this.selectValue(this.options[newIndex]);
+                }
+                
+                setTimeout(() => {
+                    isScrolling = false;
+                }, 100);
+            }, { passive: false });
         },
         
         selectValue(value) {
@@ -178,6 +395,12 @@ const Components = {
             );
             if (selectedOption) {
                 selectedOption.classList.add('selected');
+                
+                // Smooth scroll to selected option
+                selectedOption.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
             }
             
             this.currentValue = value;
