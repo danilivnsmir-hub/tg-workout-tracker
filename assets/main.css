@@ -44,4 +44,81 @@ h1 {
 }
 .card-alpha {
   border: 1px dashed var(--accent);
+
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn:hover {
+  background: var(--card-hover);
+}
+
+.btn.accent {
+  background: var(--accent);
+  color: #000;
+}
+
+.btn.danger {
+  background: #ff4444;
+  color: #fff;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 8px;
+  background: var(--bg);
+  border-radius: 6px;
+}
+
+.set-row input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text);
+}
+
+.set-row button {
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+#stats {
+  margin: 20px 0;
+  text-align: center;
+}
+
+#stats p {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+#stats span {
+  font-weight: bold;
+  color: var(--accent);
 }
