@@ -1,5 +1,3 @@
-// storage.js - работа с Telegram CloudStorage
-
 // ====== BASIC STORAGE FUNCTIONS ======
 async function setData(key, value) {
   try {
@@ -33,14 +31,11 @@ async function removeData(key) {
 // ====== GET ALL KEYS ======
 async function getAllKeys() {
   try {
-    // если поддерживается CloudStorage.getKeys()
     if (window.Telegram?.WebApp?.CloudStorage?.getKeys) {
       const keys = await window.Telegram.WebApp.CloudStorage.getKeys();
-      if (keys && keys.length > 0) {
-        return keys;
-      }
+      if (keys && keys.length > 0) return keys;
     }
-    // fallback: если метод не сработал — берём вручную сохранённый список
+    // fallback: список ключей
     return await getData("_keysList", []);
   } catch (error) {
     console.error("Ошибка получения ключей:", error);
@@ -48,7 +43,7 @@ async function getAllKeys() {
   }
 }
 
-// ====== KEY TRACKING (fallback) ======
+// ====== TRACKING (для статистики) ======
 async function trackKey(key) {
   try {
     let keysList = await getData("_keysList", []);
@@ -73,7 +68,7 @@ async function untrackKey(key) {
   }
 }
 
-// ====== ENHANCED STORAGE WITH KEY TRACKING ======
+// ====== HELPERS (для тренировок) ======
 async function setDataWithTracking(key, value) {
   await setData(key, value);
   await trackKey(key);
