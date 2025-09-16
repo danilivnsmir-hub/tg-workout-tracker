@@ -253,7 +253,7 @@ saveBtn.onclick = async () => {
     const today = new Date().toISOString().split("T")[0];
     const key = "workout_" + today;
 
-    await setDataWithTracking(key, workout); // финальная тренировка с tracking
+    await setDataWithTracking(key, workout); // 🔑 тренировка идёт через tracking
     showToast("Тренировка сохранена ✅");
     vibrate();
   } catch (e) {
@@ -268,8 +268,9 @@ clearBtn.onclick = async () => {
 
     const today = new Date().toISOString().split("T")[0];
     const key = "workout_" + today;
-    await removeDataWithTracking(key); // из статистики
-    await removeData(draftKey);        // просто черновик
+
+    await removeDataWithTracking(key); // удаляем тренировку из статистики
+    await removeData(draftKey);        // просто чистим черновик
     showToast("Очищено 🗑");
     vibrate();
   }
