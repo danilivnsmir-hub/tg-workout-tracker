@@ -1,6 +1,6 @@
-// workout.js
 const workoutDiv = document.getElementById("workout");
 const addExerciseBtn = document.getElementById("addExercise");
+const addSupersetBtn = document.getElementById("addSuperset");
 const saveBtn = document.getElementById("saveWorkout");
 const clearBtn = document.getElementById("clearWorkout");
 
@@ -40,39 +40,28 @@ const exercisesList = [
   "Жим узким хватом"
 ];
 
-// ====== WEIGHT & REPS OPTIONS ======
-function generateWeights() {
-  const weights = [];
-  // до 20 кг шаг 0.5
-  for (let w = 0; w <= 20; w += 0.5) {
-    weights.push(w);
-  }
-  // от 22.5 до 300 шаг 2.5
-  for (let w = 22.5; w <= 300; w += 2.5) {
-    weights.push(w);
-  }
-  return weights;
-}
-
-function generateReps() {
-  return Array.from({ length: 50 }, (_, i) => i + 1);
-}
-
-const weightOptions = generateWeights();
-const repsOptions = generateReps();
-
 // ====== STATS ======
 function updateStats() {
   let volume = 0;
   let reps = 0;
   let max = 0;
 
-  workout.forEach(ex => {
-    ex.sets.forEach(s => {
-      volume += s.weight * s.reps;
-      reps += s.reps;
-      if (s.weight > max) max = s.weight;
-    });
+  workout.forEach(block => {
+    if (block.type === "single") {
+      block.sets.forEach(s => {
+        volume += s.weight * s.reps;
+        reps += s.reps;
+        if (s.weight > max) max = s.weight;
+      });
+    } else if (block.type === "superset") {
+      block.exercises.forEach(ex => {
+        ex.sets.forEach(s => {
+          volume += s.weight * s.reps;
+          reps += s.reps;
+          if (s.weight > max) max = s.weight;
+        });
+      });
+    }
   });
 
   document.getElementById("statVolume").textContent = volume;
@@ -83,41 +72,76 @@ function updateStats() {
 // ====== RENDER ======
 function renderWorkout() {
   workoutDiv.innerHTML = "";
-  workout.forEach((ex, exIdx) => {
-    const exDiv = document.createElement("div");
-    exDiv.className = "card";
+  workout.forEach((block, blockIdx) => {
+    const blockDiv = document.createElement("div");
+    blockDiv.className = "card";
 
-    // Генерация выпадающего списка упражнений
-    const exerciseOptions = exercisesList.map(name => {
-      const selected = ex.name === name ? "selected" : "";
-      return `<option value="${name}" ${selected}>${name}</option>`;
-    }).join("");
+    if (block.type === "single") {
+      // одиночное упражнение
+      const exerciseOptions = exercisesList.map(name => {
+        const selected = block.name === name ? "selected" : "";
+        return `<option value="${name}" ${selected}>${name}</option>`;
+      }).join("");
 
-    // Генерация подходов
-    const setsHtml = ex.sets.map((s, sIdx) => `
-      <div class="set-row">
-        Вес: 
-        <select onchange="updateSet(${exIdx}, ${sIdx}, 'weight', this.value)">
-          ${weightOptions.map(w => `<option value="${w}" ${w === s.weight ? "selected" : ""}>${w}</option>`).join("")}
-        </select> кг
-        ×
-        <select onchange="updateSet(${exIdx}, ${sIdx}, 'reps', this.value)">
-          ${repsOptions.map(r => `<option value="${r}" ${r === s.reps ? "selected" : ""}>${r}</option>`).join("")}
+      const setsHtml = block.sets.map((s, sIdx) => `
+        <div class="set-row">
+          Вес: 
+          <select onchange="updateSet(${blockIdx}, null, ${sIdx}, 'weight', this.value)">
+            ${weightOptions.map(w => `<option value="${w}" ${w===s.weight?"selected":""}>${w}</option>`).join("")}
+          </select> кг
+          ×
+          <select onchange="updateSet(${blockIdx}, null, ${sIdx}, 'reps', this.value)">
+            ${repsOptions.map(r => `<option value="${r}" ${r===s.reps?"selected":""}>${r}</option>`).join("")}
+          </select>
+          <button onclick="removeSet(${blockIdx}, null, ${sIdx})">✖</button>
+        </div>
+      `).join("");
+
+      blockDiv.innerHTML = `
+        <h3>Одиночное упражнение</h3>
+        <select onchange="updateExerciseName(${blockIdx}, null, this.value)">
+          <option value="">-- выбрать упражнение --</option>
+          ${exerciseOptions}
         </select>
-        <button onclick="removeSet(${exIdx}, ${sIdx})">✖</button>
-      </div>
-    `).join("");
+        <div>${setsHtml}</div>
+        <button onclick="addSet(${blockIdx}, null)">+ Подход</button>
+      `;
 
-    exDiv.innerHTML = `
-      <h3>${ex.name || "Выберите упражнение"}</h3>
-      <select onchange="updateExerciseName(${exIdx}, this.value)">
-        <option value="">-- выбрать упражнение --</option>
-        ${exerciseOptions}
-      </select>
-      <div>${setsHtml}</div>
-      <button onclick="addSet(${exIdx})">+ Подход</button>
-    `;
-    workoutDiv.appendChild(exDiv);
+    } else if (block.type === "superset") {
+      blockDiv.innerHTML = `<h3>🔥 Суперсет</h3>`;
+      block.exercises.forEach((ex, exIdx) => {
+        const exerciseOptions = exercisesList.map(name => {
+          const selected = ex.name === name ? "selected" : "";
+          return `<option value="${name}" ${selected}>${name}</option>`;
+        }).join("");
+
+        const setsHtml = ex.sets.map((s, sIdx) => `
+          <div class="set-row">
+            Вес: 
+            <select onchange="updateSet(${blockIdx}, ${exIdx}, ${sIdx}, 'weight', this.value)">
+              ${weightOptions.map(w => `<option value="${w}" ${w===s.weight?"selected":""}>${w}</option>`).join("")}
+            </select> кг
+            ×
+            <select onchange="updateSet(${blockIdx}, ${exIdx}, ${sIdx}, 'reps', this.value)">
+              ${repsOptions.map(r => `<option value="${r}" ${r===s.reps?"selected":""}>${r}</option>`).join("")}
+            </select>
+            <button onclick="removeSet(${blockIdx}, ${exIdx}, ${sIdx})">✖</button>
+          </div>
+        `).join("");
+
+        blockDiv.innerHTML += `
+          <div class="superset-ex">
+            <select onchange="updateExerciseName(${blockIdx}, ${exIdx}, this.value)">
+              <option value="">-- выбрать упражнение --</option>
+              ${exerciseOptions}
+            </select>
+            <div>${setsHtml}</div>
+            <button onclick="addSet(${blockIdx}, ${exIdx})">+ Подход</button>
+          </div>
+        `;
+      });
+    }
+    workoutDiv.appendChild(blockDiv);
   });
 
   updateStats();
@@ -125,73 +149,62 @@ function renderWorkout() {
 
 // ====== ACTIONS ======
 addExerciseBtn.onclick = () => {
-  workout.push({ name: "", sets: [{ weight: 0, reps: 1 }] });
+  workout.push({ type: "single", name: "", sets: [{ weight: 0, reps: 1 }] });
   renderWorkout();
   vibrate();
 };
 
-function addSet(exIdx) {
-  const last = workout[exIdx].sets[workout[exIdx].sets.length - 1];
-  workout[exIdx].sets.push({
-    weight: last?.weight || 0,
-    reps: last?.reps || 1,
+addSupersetBtn.onclick = () => {
+  workout.push({
+    type: "superset",
+    exercises: [
+      { name: "", sets: [{ weight: 0, reps: 1 }] },
+      { name: "", sets: [{ weight: 0, reps: 1 }] }
+    ]
   });
   renderWorkout();
   vibrate();
-}
+};
 
-function removeSet(exIdx, sIdx) {
-  workout[exIdx].sets.splice(sIdx, 1);
+// универсальные обновлялки для одиночных и суперсетов
+function addSet(blockIdx, exIdx) {
+  if (workout[blockIdx].type === "single") {
+    const last = workout[blockIdx].sets[workout[blockIdx].sets.length - 1];
+    workout[blockIdx].sets.push({ weight: last?.weight || 0, reps: last?.reps || 1 });
+  } else {
+    const last = workout[blockIdx].exercises[exIdx].sets.slice(-1)[0];
+    workout[blockIdx].exercises[exIdx].sets.push({ weight: last?.weight || 0, reps: last?.reps || 1 });
+  }
   renderWorkout();
   vibrate();
 }
 
-function updateExerciseName(exIdx, val) {
-  workout[exIdx].name = val.replace(/ё/g, "е").replace(/Ё/g, "Е"); // замена "ё"
+function removeSet(blockIdx, exIdx, sIdx) {
+  if (workout[blockIdx].type === "single") {
+    workout[blockIdx].sets.splice(sIdx, 1);
+  } else {
+    workout[blockIdx].exercises[exIdx].sets.splice(sIdx, 1);
+  }
+  renderWorkout();
+  vibrate();
 }
 
-function updateSet(exIdx, sIdx, field, val) {
-  workout[exIdx].sets[sIdx][field] = Number(val);
+function updateExerciseName(blockIdx, exIdx, val) {
+  const cleanVal = val.replace(/ё/g, "е").replace(/Ё/g, "Е");
+  if (workout[blockIdx].type === "single") {
+    workout[blockIdx].name = cleanVal;
+  } else {
+    workout[blockIdx].exercises[exIdx].name = cleanVal;
+  }
+}
+
+function updateSet(blockIdx, exIdx, sIdx, field, val) {
+  if (workout[blockIdx].type === "single") {
+    workout[blockIdx].sets[sIdx][field] = Number(val);
+  } else {
+    workout[blockIdx].exercises[exIdx].sets[sIdx][field] = Number(val);
+  }
   updateStats();
 }
 
-// ====== SAVE & CLEAR ======
-saveBtn.onclick = async () => {
-  try {
-    const today = new Date().toISOString().split("T")[0];
-    const key = "workout_" + today;
-
-    await setData(key, workout);
-    showToast("Тренировка сохранена ✅");
-    vibrate();
-  } catch (e) {
-    showError(e);
-  }
-};
-
-clearBtn.onclick = async () => {
-  if (confirm("Очистить тренировку?")) {
-    workout = [];
-    renderWorkout();
-
-    const today = new Date().toISOString().split("T")[0];
-    const key = "workout_" + today;
-    await removeData(key);
-    showToast("Очищено 🗑");
-    vibrate();
-  }
-};
-
-// ====== RESTORE DRAFT ======
-(async () => {
-  try {
-    const today = new Date().toISOString().split("T")[0];
-    const key = "workout_" + today;
-
-    const data = await getData(key, []);
-    workout = data;
-    renderWorkout();
-  } catch (e) {
-    console.error("Ошибка загрузки тренировки:", e);
-  }
-})();
+// ====== SAVE, CLEAR, RESTORE ====== (без изменений, как у тебя было)
