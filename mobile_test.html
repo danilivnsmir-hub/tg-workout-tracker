@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fitness Hub - Mobile Test</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <style>
+        .test-container {
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .test-button {
+            margin: 1rem;
+            padding: 1rem 2rem;
+            background: var(--bg-glass);
+            border: 2px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            font-size: var(--font-size-lg);
+            cursor: pointer;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-glass);
+            transition: all 0.3s ease;
+            min-height: 60px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .test-button:hover {
+            background: var(--bg-glass-light);
+            transform: translateY(-2px);
+            box-shadow: var(--glow-primary);
+        }
+        
+        .test-button:active {
+            transform: scale(0.96);
+        }
+        
+        .device-preview {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .device-frame {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 1rem;
+            box-shadow: var(--shadow-glass);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+        }
+        
+        .device-info {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .breakpoint-indicator {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 0.5rem 1rem;
+            font-size: var(--font-size-sm);
+            color: var(--text-primary);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 100;
+        }
+        
+        @media (max-width: 768px) {
+            .breakpoint-indicator::after {
+                content: "Tablet (≤768px)";
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .breakpoint-indicator::after {
+                content: "Mobile (≤480px)";
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .breakpoint-indicator::after {
+                content: "Desktop (>768px)";
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="breakpoint-indicator"></div>
+    
+    <div class="test-container">
+        <h1 style="color: var(--primary-color); margin-bottom: 2rem;">🏋️ Fitness Hub Mobile Test</h1>
+        
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+            Протестируйте мобильную адаптацию всплывающих окон на разных размерах экранов
+        </p>
+        
+        <div class="device-preview">
+            <div class="device-frame">
+                <div class="device-info">📱 Mobile Portrait</div>
+                <div>320px - 480px</div>
+            </div>
+            <div class="device-frame">
+                <div class="device-info">📱 Mobile Landscape</div>
+                <div>481px - 768px</div>
+            </div>
+            <div class="device-frame">
+                <div class="device-info">💻 Desktop</div>
+                <div>769px+</div>
+            </div>
+        </div>
+        
+        <div style="margin: 2rem 0;">
+            <button class="test-button" onclick="testExerciseModal()">
+                Тест: Выбор упражнения
+            </button>
+            <button class="test-button" onclick="testPickerModal()">
+                Тест: Колесо выбора
+            </button>
+        </div>
+        
+        <div style="background: var(--bg-card); border-radius: var(--radius-xl); padding: 2rem; margin: 2rem auto; max-width: 600px; border: 1px solid var(--border-glass); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);">
+            <h3 style="color: var(--primary-color); margin-bottom: 1rem;">✅ Улучшения мобильной адаптации:</h3>
+            <ul style="text-align: left; color: var(--text-secondary); line-height: 1.6;">
+                <li>Модальные окна теперь занимают полную ширину на мобильных (≤480px)</li>
+                <li>Увеличенные размеры кнопок для удобного нажатия пальцем (60px минимум)</li>
+                <li>Улучшенная touch-обработка с визуальной обратной связью</li>
+                <li>Колеса выбора адаптированы для свайпов и тапов</li>
+                <li>Поддержка виртуальной клавиатуры и автоскролла</li>
+                <li>Отключение зума при двойном тапе</li>
+                <li>Плавная анимация slide-up для мобильных модалов</li>
+                <li>Адаптивные breakpoints: 360px, 480px, 768px</li>
+            </ul>
+        </div>
+        
+        <a href="index.html" class="test-button" style="display: inline-block; text-decoration: none;">
+            ← Вернуться в Fitness Hub
+        </a>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay">
+        <!-- Exercise Selector Modal -->
+        <div id="exercise-modal" class="modal">
+            <div class="modal-header">
+                <h3>Выбери упражнение</h3>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="search-box">
+                    <input type="text" id="exercise-search" placeholder="Поиск упражнений..." class="form-input">
+                </div>
+                <div id="exercise-list" class="exercise-list">
+                    <!-- Exercise options will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Value Picker Modal -->
+        <div id="picker-modal" class="modal">
+            <div class="modal-header">
+                <h3 id="picker-title">Выбери значение</h3>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="picker-container">
+                    <div id="picker-wheel" class="picker-wheel">
+                        <!-- Picker values will be populated here -->
+                    </div>
+                </div>
+                <button id="picker-confirm" class="btn btn-primary">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/components.js"></script>
+    <script>
+        // Test functions
+        function testExerciseModal() {
+            if (typeof Components !== 'undefined') {
+                Components.ExerciseSelector.show((exercise) => {
+                    alert(`Выбрано упражнение: ${exercise}`);
+                }, []);
+            }
+        }
+        
+        function testPickerModal() {
+            if (typeof Components !== 'undefined') {
+                const weights = [];
+                for (let i = 5; i <= 200; i += 5) {
+                    weights.push(i + ' кг');
+                }
+                
+                Components.ValuePicker.show(
+                    'Выбери вес',
+                    '50 кг',
+                    weights,
+                    (value) => {
+                        alert(`Выбран вес: ${value}`);
+                    }
+                );
+            }
+        }
+        
+        // Initialize components
+        if (typeof Components !== 'undefined') {
+            Components.init();
+        }
+        
+        // Add responsive behavior indicator
+        function updateBreakpoint() {
+            const width = window.innerWidth;
+            console.log(`Screen width: ${width}px`);
+        }
+        
+        window.addEventListener('resize', updateBreakpoint);
+        updateBreakpoint();
+    </script>
+</body>
+</html>

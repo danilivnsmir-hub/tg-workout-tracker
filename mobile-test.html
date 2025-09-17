@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Fitness Hub - Mobile Test</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+    <div class="app">
+        <div class="app-header">
+            <h1>🏋️ Mobile Test</h1>
+            <p>Тестирование нового интерфейса добавления упражнений на мобильных устройствах</p>
+        </div>
+        
+        <div class="mobile-test-content">
+            <!-- Device Simulation Info -->
+            <div class="device-info">
+                <h3>📱 Текущий breakpoint:</h3>
+                <div id="current-breakpoint" class="breakpoint-indicator">
+                    Определяется...
+                </div>
+                <div class="screen-size" id="screen-size">
+                    Размер экрана: определяется...
+                </div>
+            </div>
+            
+            <!-- Test Buttons -->
+            <div class="test-buttons">
+                <button id="test-add-exercise" class="test-btn primary">
+                    💪 Протестировать добавление упражнения
+                </button>
+                
+                <button id="test-mobile-simulation" class="test-btn secondary">
+                    📱 Симулировать мобильный (375px)
+                </button>
+                
+                <button id="test-tablet-simulation" class="test-btn secondary">
+                    📟 Симулировать планшет (768px)  
+                </button>
+                
+                <button id="test-desktop-simulation" class="test-btn secondary">
+                    🖥️ Симулировать десктоп (1200px)
+                </button>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="test-instructions">
+                <h3>🧪 Инструкции по тестированию:</h3>
+                <ul>
+                    <li><strong>Шаг 1:</strong> Нажмите "Протестировать добавление упражнения"</li>
+                    <li><strong>Шаг 2:</strong> Проверьте, что интерфейс выезжает снизу (bottom sheet) на мобильных</li>
+                    <li><strong>Шаг 3:</strong> Выберите упражнение и нажмите "Далее"</li>
+                    <li><strong>Шаг 4:</strong> Настройте параметры (вес/повторы) и нажмите "Добавить"</li>
+                    <li><strong>Шаг 5:</strong> Протестируйте разные размеры экранов</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include new Exercise Stepper -->
+    <div id="exercise-stepper" class="exercise-stepper">
+        <div class="stepper-handle"></div>
+        
+        <div class="stepper-header">
+            <div class="stepper-progress">
+                <div class="step-indicator">
+                    <div id="step-1-dot" class="step-dot active"></div>
+                    <span id="step-1-label">Упражнение</span>
+                </div>
+            </div>
+            
+            <h3 id="stepper-title" class="stepper-title">Выбери упражнение</h3>
+            
+            <div class="stepper-progress">
+                <div class="step-indicator">
+                    <span id="step-2-label">Параметры</span>
+                    <div id="step-2-dot" class="step-dot"></div>
+                </div>
+            </div>
+            
+            <button id="stepper-close" class="stepper-close">✕</button>
+        </div>
+        
+        <div id="stepper-content" class="stepper-content">
+            <!-- Content will be dynamically populated here -->
+        </div>
+        
+        <div class="stepper-actions">
+            <button id="stepper-back" class="stepper-btn secondary" style="display: none;">
+                ← Назад
+            </button>
+            <button id="stepper-cancel" class="stepper-btn secondary">
+                Отмена
+            </button>
+            <button id="stepper-next" class="stepper-btn primary" disabled>
+                Далее →
+            </button>
+        </div>
+    </div>
+
+    <div id="stepper-overlay" class="modal-overlay"></div>
+
+    <style>
+        .mobile-test-content {
+            padding: 2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .device-info {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--radius-xl);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .breakpoint-indicator {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 0.5rem 0;
+        }
+        
+        .screen-size {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .test-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .test-btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .test-btn.primary {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow-primary);
+        }
+        
+        .test-btn.secondary {
+            background: var(--bg-glass);
+            color: var(--text-primary);
+            border: 1px solid var(--border-glass);
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .test-instructions {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .test-instructions ul {
+            padding-left: 1.5rem;
+        }
+        
+        .test-instructions li {
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-test-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+
+    <!-- Include necessary JS files -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/components.js"></script>
+
+    <script>
+        // Test functionality
+        let currentTestWidth = null;
+
+        function updateBreakpointInfo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            let breakpoint = '';
+            
+            if (width <= 360) breakpoint = '📱 Extra Small Mobile (≤360px)';
+            else if (width <= 480) breakpoint = '📱 Mobile (≤480px)';
+            else if (width <= 768) breakpoint = '📟 Tablet (≤768px)';
+            else breakpoint = '🖥️ Desktop (>768px)';
+            
+            document.getElementById('current-breakpoint').textContent = breakpoint;
+            document.getElementById('screen-size').textContent = `Размер экрана: ${width}x${height}px`;
+        }
+
+        function simulateScreenSize(width) {
+            currentTestWidth = width;
+            document.body.style.width = width + 'px';
+            document.body.style.margin = '0 auto';
+            document.body.style.border = '2px solid var(--primary-color)';
+            document.body.style.borderRadius = '10px';
+            document.body.style.overflow = 'hidden';
+            
+            // Trigger resize event
+            window.dispatchEvent(new Event('resize'));
+            setTimeout(updateBreakpointInfo, 100);
+        }
+
+        function resetScreenSize() {
+            document.body.style.width = '';
+            document.body.style.margin = '';
+            document.body.style.border = '';
+            document.body.style.borderRadius = '';
+            document.body.style.overflow = '';
+            currentTestWidth = null;
+            updateBreakpointInfo();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize components
+            Components.init();
+            
+            updateBreakpointInfo();
+            window.addEventListener('resize', updateBreakpointInfo);
+
+            // Test buttons
+            document.getElementById('test-add-exercise').addEventListener('click', () => {
+                Components.ExerciseStepper.show((exercise) => {
+                    alert(`✅ Упражнение добавлено: ${exercise.name}\nВес: ${exercise.sets[0].weight}кг\nПовторы: ${exercise.sets[0].reps}`);
+                }, []);
+            });
+
+            document.getElementById('test-mobile-simulation').addEventListener('click', () => {
+                simulateScreenSize(375);
+            });
+
+            document.getElementById('test-tablet-simulation').addEventListener('click', () => {
+                simulateScreenSize(768);
+            });
+
+            document.getElementById('test-desktop-simulation').addEventListener('click', () => {
+                resetScreenSize();
+            });
+        });
+    </script>
+</body>
+</html>

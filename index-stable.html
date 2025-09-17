@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fitness Hub - Stable Version</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Main Navigation -->
+        <header class="app-header">
+            <h1 class="app-title">🏋️ Fitness Hub</h1>
+            <button id="settings-btn" class="icon-btn">⚙️</button>
+        </header>
+
+        <!-- Module Cards -->
+        <div id="main-screen" class="screen active">
+            <div class="modules-grid">
+                <div class="module-card" data-module="workout">
+                    <div class="module-icon">💪</div>
+                    <h3 class="module-title">Тренировки</h3>
+                    <p class="module-desc">Создавай и отслеживай свои тренировки</p>
+                    <div class="module-stats">
+                        <span id="draft-indicator" class="draft-badge" style="display: none;">Есть черновик</span>
+                        <span id="total-workouts">0 тренировок</span>
+                    </div>
+                </div>
+
+                <div class="module-card" data-module="history">
+                    <div class="module-icon">📅</div>
+                    <h3 class="module-title">История</h3>
+                    <p class="module-desc">Просматривай прошлые тренировки</p>
+                    <div class="module-stats">
+                        <span id="total-history">0 записей</span>
+                    </div>
+                </div>
+
+                <div class="module-card" data-module="stats">
+                    <div class="module-icon">📊</div>
+                    <h3 class="module-title">Статистика</h3>
+                    <p class="module-desc">Анализируй свой прогресс</p>
+                    <div class="module-stats">
+                        <span id="total-tonnage">0 кг</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workout Module -->
+        <div id="workout-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn">← Назад</button>
+                <h2 class="screen-title">Тренировка</h2>
+                <button id="workout-menu-btn" class="icon-btn">⋮</button>
+            </div>
+
+            <div class="workout-content">
+                <!-- Date Selector -->
+                <div class="date-selector">
+                    <button id="date-prev" class="date-nav-btn">‹</button>
+                    <div class="date-display">
+                        <span id="workout-date">Сегодня</span>
+                        <small id="workout-date-full"></small>
+                    </div>
+                    <button id="date-next" class="date-nav-btn">›</button>
+                </div>
+
+                <!-- Workout Stats -->
+                <div class="workout-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="workout-tonnage">0</span>
+                        <span class="stat-label">кг</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="workout-reps">0</span>
+                        <span class="stat-label">повторов</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="workout-max-weight">0</span>
+                        <span class="stat-label">макс вес</span>
+                    </div>
+                </div>
+
+                <!-- Add Exercise Section -->
+                <div id="add-exercise-section" class="add-exercise-section">
+                    <div class="add-exercise-header">
+                        <h3 class="add-exercise-title">➕ Добавить упражнение</h3>
+                    </div>
+                    
+                    <div class="add-exercise-form">
+                        <form id="exercise-form">
+                            <!-- Exercise Selection -->
+                            <div class="form-group">
+                                <label class="form-label">Упражнение</label>
+                                <select id="exercise-select" name="exercise" class="form-select" required>
+                                    <option value="">Выберите упражнение</option>
+                                    <option value="Жим лежа">Жим лежа</option>
+                                    <option value="Приседания">Приседания</option>
+                                    <option value="Становая тяга">Становая тяга</option>
+                                    <option value="Жим стоя">Жим стоя</option>
+                                    <option value="Подтягивания">Подтягивания</option>
+                                    <option value="Отжимания">Отжимания</option>
+                                    <option value="Жим гантелей">Жим гантелей</option>
+                                    <option value="Тяга штанги в наклоне">Тяга штанги в наклоне</option>
+                                    <option value="Французский жим">Французский жим</option>
+                                    <option value="Подъем на бицепс">Подъем на бицепс</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Weight Input -->
+                            <div class="form-group">
+                                <label class="form-label">Вес (кг)</label>
+                                <input type="number" id="weight-input" name="weight" class="form-input" 
+                                       min="0" max="500" step="0.5" placeholder="0">
+                            </div>
+                            
+                            <!-- Reps Input -->
+                            <div class="form-group">
+                                <label class="form-label">Повторения</label>
+                                <input type="number" id="reps-input" name="reps" class="form-input" 
+                                       min="1" max="50" placeholder="0">
+                            </div>
+                            
+                            <!-- Action Button -->
+                            <div class="add-exercise-actions">
+                                <button type="submit" id="add-exercise-btn" class="btn-primary">
+                                    <span class="btn-icon">💪</span>
+                                    Добавить упражнение
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Exercises List -->
+                <div id="exercises-list" class="exercises-list">
+                    <div class="empty-state" id="empty-workout">
+                        <div class="empty-icon">💪</div>
+                        <p>Твои упражнения появятся здесь</p>
+                        <p class="empty-hint">Используй форму выше для добавления</p>
+                    </div>
+                </div>
+
+                <div class="workout-actions">
+                    <button id="save-workout-btn" class="btn btn-success">💾 Сохранить</button>
+                    <button id="clear-workout-btn" class="btn btn-danger">🗑️ Очистить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Module -->
+        <div id="history-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn">← Назад</button>
+                <h2 class="screen-title">История тренировок</h2>
+            </div>
+
+            <div class="history-content">
+                <div id="history-list" class="history-list">
+                    <div class="empty-state" id="empty-history">
+                        <div class="empty-icon">📅</div>
+                        <p>История тренировок пуста</p>
+                        <p class="empty-hint">Создай свою первую тренировку</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Module -->
+        <div id="stats-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn">← Назад</button>
+                <h2 class="screen-title">Статистика</h2>
+            </div>
+
+            <div class="stats-content">
+                <div class="stats-overview">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stats-total-workouts">0</div>
+                        <div class="stat-label">Тренировок</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stats-total-tonnage">0</div>
+                        <div class="stat-label">Общий тоннаж (кг)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stats-avg-tonnage">0</div>
+                        <div class="stat-label">Средний тоннаж</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stats-best-day">-</div>
+                        <div class="stat-label">Лучший день</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Загрузка...</p>
+    </div>
+
+    <!-- Scripts - Load with error protection -->
+    <script>
+        // Error handler for script loading
+        window.addEventListener('error', function(e) {
+            console.error('Script loading error:', e);
+            // Continue with minimal functionality
+        });
+    </script>
+    
+    <script src="js/config.js" onerror="console.warn('Config failed to load')"></script>
+    <script src="js/storage.js" onerror="console.warn('Storage failed to load')"></script>
+    <script src="js/utils.js" onerror="console.warn('Utils failed to load')"></script>
+    <script src="js/components.js" onerror="console.warn('Components failed to load')"></script>
+    <script src="js/workout.js" onerror="console.warn('Workout module failed to load')"></script>
+    <script src="js/history.js" onerror="console.warn('History module failed to load')"></script>
+    <script src="js/statistics.js" onerror="console.warn('Statistics module failed to load')"></script>
+    <script src="js/app-fixed.js"></script>
+</body>
+</html>
