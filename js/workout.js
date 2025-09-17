@@ -203,56 +203,41 @@ const WorkoutModule = {
     },
     
     addExercise() {
-        const selectedExercises = this.getSelectedExerciseNames();
+        // This method is now handled by the inline exercise builder
+        // The inline builder will call addExerciseToWorkout when ready
+    },
+    
+    // New method called by InlineExerciseBuilder
+    addExerciseToWorkout(exercise) {
+        if (!this.currentWorkout) {
+            this.currentWorkout = this.createEmptyWorkout(Utils.getDateString(this.currentDate));
+        }
         
-        // Use new stepper interface
-        Components.ExerciseStepper.show((exercise) => {
-            // Exercise already comes with proper parameters from stepper
-            this.currentWorkout.exercises.push(exercise);
-            this.markDirty();
-            this.renderWorkout();
-            this.updateWorkoutStats();
-            
-            Utils.hapticFeedback('success');
-            Utils.showSuccess('Упражнение добавлено в тренировку!');
-        }, selectedExercises);
+        this.currentWorkout.exercises.push(exercise);
+        this.markDirty();
+        this.renderWorkout();
+        this.updateWorkoutStats();
+        
+        // Show empty state if needed
+        this.updateEmptyState();
     },
     
     addSuperset() {
-        const selectedExercises = this.getSelectedExerciseNames();
+        // This method is now handled by the inline exercise builder
+        // The inline builder will call addExerciseToWorkout when ready
+    },
+    
+    updateEmptyState() {
+        const exercisesList = document.getElementById('exercises-list');
+        const emptyState = document.getElementById('empty-workout');
         
-        // Show first exercise selector
-        Components.ExerciseSelector.show((firstExercise) => {
-            const updatedSelected = [...selectedExercises, firstExercise];
-            
-            // Show second exercise selector
-            Components.ExerciseSelector.show((secondExercise) => {
-                const superset = {
-                    id: Utils.generateId(),
-                    type: 'superset',
-                    exercises: [
-                        {
-                            id: Utils.generateId(),
-                            name: firstExercise,
-                            sets: [{ weight: 0, reps: 0 }]
-                        },
-                        {
-                            id: Utils.generateId(),
-                            name: secondExercise,
-                            sets: [{ weight: 0, reps: 0 }]
-                        }
-                    ]
-                };
-                
-                this.currentWorkout.exercises.push(superset);
-                this.markDirty();
-                this.renderWorkout();
-                this.updateWorkoutStats();
-                
-                Utils.hapticFeedback('success');
-                Utils.showSuccess('Суперсет добавлен!');
-            }, updatedSelected);
-        }, selectedExercises);
+        if (!exercisesList || !emptyState) return;
+        
+        if (!this.currentWorkout?.exercises || this.currentWorkout.exercises.length === 0) {
+            emptyState.style.display = 'flex';
+        } else {
+            emptyState.style.display = 'none';
+        }
     },
     
     getSelectedExerciseNames() {

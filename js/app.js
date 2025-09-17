@@ -16,7 +16,7 @@ const App = {
             // Wait for storage initialization
             await storage.waitForInit();
             
-            // Initialize components
+            // Initialize components (no modals, only simple dropdowns)
             Components.init();
             
             // Initialize modules
@@ -211,6 +211,12 @@ const App = {
                     this.modules.workout.init();
                     this.modules.workout.isInitialized = true;
                 }
+                // Initialize inline exercise builder for workout screen
+                setTimeout(() => {
+                    if (Components.InlineExerciseBuilder && document.getElementById('exercise-search')) {
+                        Components.InlineExerciseBuilder.init();
+                    }
+                }, 200);
                 break;
                 
             case 'history':

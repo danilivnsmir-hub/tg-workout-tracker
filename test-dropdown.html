@@ -1,0 +1,219 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Test Fitness Hub - Simple Dropdowns</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Main Navigation -->
+        <header class="app-header">
+            <h1 class="app-title">🏋️ Fitness Hub - Test</h1>
+        </header>
+
+        <!-- Main Content -->
+        <div class="screen active" style="padding: 20px;">
+            <h2>✅ Dropdown Interface Test</h2>
+            
+            <!-- Workout Stats -->
+            <div class="workout-stats">
+                <div class="stat-item">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">кг</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">повторов</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">макс вес</span>
+                </div>
+            </div>
+
+            <!-- Simple Dropdown Exercise Form -->
+            <div class="add-exercise-section">
+                <div class="add-exercise-header">
+                    <h3 class="add-exercise-title">➕ Добавить упражнение (Простые Dropdown)</h3>
+                </div>
+                
+                <div class="add-exercise-form">
+                    <!-- Exercise Selection Dropdown -->
+                    <div class="form-group">
+                        <label class="form-label">Упражнение</label>
+                        <select id="exercise-select" class="form-select">
+                            <option value="">Выберите упражнение</option>
+                            <option value="Жим лежа">Жим лежа</option>
+                            <option value="Приседания">Приседания</option>
+                            <option value="Становая тяга">Становая тяга</option>
+                            <option value="Жим стоя">Жим стоя</option>
+                            <option value="Подтягивания">Подтягивания</option>
+                            <option value="Отжимания">Отжимания</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Weight Selection Dropdown -->
+                    <div class="form-group">
+                        <label class="form-label">Вес (кг)</label>
+                        <select id="weight-select" class="form-select">
+                            <option value="">Выберите вес</option>
+                            <option value="0.5">0.5 кг</option>
+                            <option value="1">1 кг</option>
+                            <option value="2.5">2.5 кг</option>
+                            <option value="5">5 кг</option>
+                            <option value="10">10 кг</option>
+                            <option value="20">20 кг</option>
+                            <option value="40">40 кг</option>
+                            <option value="60">60 кг</option>
+                            <option value="80">80 кг</option>
+                            <option value="100">100 кг</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Reps Selection Dropdown -->
+                    <div class="form-group">
+                        <label class="form-label">Повторения</label>
+                        <select id="reps-select" class="form-select">
+                            <option value="">Выберите количество</option>
+                            <option value="1">1 повтор</option>
+                            <option value="5">5 повторов</option>
+                            <option value="8">8 повторов</option>
+                            <option value="10">10 повторов</option>
+                            <option value="12">12 повторов</option>
+                            <option value="15">15 повторов</option>
+                            <option value="20">20 повторов</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="add-exercise-actions">
+                        <button id="add-exercise-btn" class="btn-primary" disabled>
+                            <span class="btn-icon">💪</span>
+                            Добавить упражнение
+                        </button>
+                        <button id="add-superset-btn" class="btn-secondary" disabled>
+                            <span class="btn-icon">🔗</span>
+                            Добавить в суперсет
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Test -->
+            <div class="history-content" style="margin-top: 40px;">
+                <h3>📅 История тренировок (Раскрывающиеся секции)</h3>
+                <div class="history-list">
+                    <!-- Sample History Item -->
+                    <div class="history-item">
+                        <div class="history-header" onclick="toggleDetails(this)">
+                            <div class="history-date">
+                                Вчера
+                            </div>
+                            <div class="history-stats">
+                                <span>120 кг</span>
+                                <span>45 повторов</span>
+                                <span>3 упражнения</span>
+                            </div>
+                            <div class="history-toggle">
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="history-exercises">
+                            Жим лежа, Приседания, Становая тяга
+                        </div>
+                        <div class="history-details" style="display: none;">
+                            <div class="workout-detail-stats">
+                                <div class="stat-card">
+                                    <div class="stat-value">120</div>
+                                    <div class="stat-label">Тоннаж (кг)</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">45</div>
+                                    <div class="stat-label">Повторов</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">80</div>
+                                    <div class="stat-label">Макс вес (кг)</div>
+                                </div>
+                            </div>
+                            <div class="workout-detail-exercise">
+                                <h4>Жим лежа</h4>
+                                <div class="workout-detail-sets">
+                                    <div class="workout-detail-set">
+                                        <span>Подход 1</span>
+                                        <span>60 кг × 10</span>
+                                    </div>
+                                    <div class="workout-detail-set">
+                                        <span>Подход 2</span>
+                                        <span>80 кг × 8</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; padding: 20px; background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-glass);">
+                <h3 style="color: var(--success-color);">✅ Результат переработки:</h3>
+                <ul style="color: var(--text-secondary); line-height: 1.8;">
+                    <li>❌ <strong>Убраны все модальные окна</strong> - никаких всплывающих окон</li>
+                    <li>✅ <strong>Простые HTML select элементы</strong> для выбора упражнений, веса, повторов</li>
+                    <li>✅ <strong>Раскрывающиеся секции в истории</strong> вместо модальных окон</li>
+                    <li>✅ <strong>Сохранен liquid glass дизайн</strong> - все стили адаптированы</li>
+                    <li>✅ <strong>Мобильная оптимизация</strong> - touch-friendly элементы</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple test script for dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const exerciseSelect = document.getElementById('exercise-select');
+            const weightSelect = document.getElementById('weight-select');
+            const repsSelect = document.getElementById('reps-select');
+            const addBtn = document.getElementById('add-exercise-btn');
+            const supersetBtn = document.getElementById('add-superset-btn');
+
+            function updateButtons() {
+                const hasExercise = exerciseSelect.value;
+                const hasWeight = weightSelect.value;
+                const hasReps = repsSelect.value;
+                const isValid = hasExercise && (hasWeight || hasReps);
+                
+                addBtn.disabled = !isValid;
+                supersetBtn.disabled = !isValid;
+            }
+
+            exerciseSelect.addEventListener('change', updateButtons);
+            weightSelect.addEventListener('change', updateButtons);
+            repsSelect.addEventListener('change', updateButtons);
+
+            addBtn.addEventListener('click', function() {
+                alert(`Упражнение добавлено:\n${exerciseSelect.value}\n${weightSelect.value} кг × ${repsSelect.value} повторов`);
+            });
+        });
+
+        function toggleDetails(header) {
+            const item = header.closest('.history-item');
+            const details = item.querySelector('.history-details');
+            const icon = item.querySelector('.toggle-icon');
+            
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+                icon.textContent = '▲';
+                item.classList.add('expanded');
+            } else {
+                details.style.display = 'none';
+                icon.textContent = '▼';
+                item.classList.remove('expanded');
+            }
+        }
+    </script>
+</body>
+</html>

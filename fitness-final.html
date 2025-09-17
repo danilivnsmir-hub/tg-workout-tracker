@@ -1,0 +1,588 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fitness Hub - Simple Dropdowns</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Main Navigation -->
+        <header class="app-header">
+            <h1 class="app-title">🏋️ Fitness Hub</h1>
+            <button id="settings-btn" class="icon-btn">⚙️</button>
+        </header>
+
+        <!-- Module Cards -->
+        <div id="main-screen" class="screen active">
+            <div class="modules-grid">
+                <div class="module-card active" data-module="workout">
+                    <div class="module-icon">💪</div>
+                    <h3 class="module-title">Тренировки</h3>
+                    <p class="module-desc">Простые dropdown элементы</p>
+                    <div class="module-stats">
+                        <span class="success-badge">Активно</span>
+                    </div>
+                </div>
+
+                <div class="module-card" data-module="history">
+                    <div class="module-icon">📅</div>
+                    <h3 class="module-title">История</h3>
+                    <p class="module-desc">Раскрывающиеся секции</p>
+                    <div class="module-stats">
+                        <span id="total-workouts">3 тренировки</span>
+                    </div>
+                </div>
+
+                <div class="module-card" data-module="stats">
+                    <div class="module-icon">📊</div>
+                    <h3 class="module-title">Статистика</h3>
+                    <p class="module-desc">Простые графики</p>
+                    <div class="module-stats">
+                        <span id="total-tonnage">450 кг</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workout Module -->
+        <div id="workout-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" onclick="showScreen('main')">← Назад</button>
+                <h2 class="screen-title">Тренировка</h2>
+            </div>
+
+            <div class="workout-content">
+                <!-- Date Selector -->
+                <div class="date-selector">
+                    <button class="date-nav-btn">‹</button>
+                    <div class="date-display">
+                        <span>Сегодня</span>
+                        <small id="current-date"></small>
+                    </div>
+                    <button class="date-nav-btn">›</button>
+                </div>
+
+                <!-- Workout Stats -->
+                <div class="workout-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="workout-tonnage">0</span>
+                        <span class="stat-label">кг</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="workout-reps">0</span>
+                        <span class="stat-label">повторов</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="workout-max-weight">0</span>
+                        <span class="stat-label">макс вес</span>
+                    </div>
+                </div>
+
+                <!-- Simple Dropdown Exercise Form -->
+                <div class="add-exercise-section">
+                    <div class="add-exercise-header">
+                        <h3 class="add-exercise-title">➕ Добавить упражнение</h3>
+                    </div>
+                    
+                    <div class="add-exercise-form">
+                        <!-- Exercise Selection Dropdown -->
+                        <div class="form-group">
+                            <label class="form-label">Упражнение</label>
+                            <select id="exercise-select" class="form-select">
+                                <option value="">Выберите упражнение</option>
+                                <option value="Жим лежа">Жим лежа</option>
+                                <option value="Приседания">Приседания</option>
+                                <option value="Становая тяга">Становая тяга</option>
+                                <option value="Жим стоя">Жим стоя</option>
+                                <option value="Подтягивания">Подтягивания</option>
+                                <option value="Отжимания">Отжимания</option>
+                                <option value="Планка">Планка</option>
+                                <option value="Сгибания на бицепс">Сгибания на бицепс</option>
+                                <option value="Тяга штанги в наклоне">Тяга штанги в наклоне</option>
+                                <option value="Французский жим">Французский жим</option>
+                                <option value="Жим ногами">Жим ногами</option>
+                                <option value="Разведение гантелей">Разведение гантелей</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Weight Selection Dropdown -->
+                        <div class="form-group">
+                            <label class="form-label">Вес (кг)</label>
+                            <select id="weight-select" class="form-select">
+                                <option value="">Выберите вес</option>
+                                <option value="0.5">0.5 кг</option>
+                                <option value="1">1 кг</option>
+                                <option value="2.5">2.5 кг</option>
+                                <option value="5">5 кг</option>
+                                <option value="7.5">7.5 кг</option>
+                                <option value="10">10 кг</option>
+                                <option value="12.5">12.5 кг</option>
+                                <option value="15">15 кг</option>
+                                <option value="20">20 кг</option>
+                                <option value="25">25 кг</option>
+                                <option value="30">30 кг</option>
+                                <option value="40">40 кг</option>
+                                <option value="50">50 кг</option>
+                                <option value="60">60 кг</option>
+                                <option value="70">70 кг</option>
+                                <option value="80">80 кг</option>
+                                <option value="90">90 кг</option>
+                                <option value="100">100 кг</option>
+                                <option value="120">120 кг</option>
+                                <option value="140">140 кг</option>
+                                <option value="160">160 кг</option>
+                                <option value="180">180 кг</option>
+                                <option value="200">200 кг</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Reps Selection Dropdown -->
+                        <div class="form-group">
+                            <label class="form-label">Повторения</label>
+                            <select id="reps-select" class="form-select">
+                                <option value="">Выберите количество</option>
+                                <option value="1">1 повтор</option>
+                                <option value="2">2 повтора</option>
+                                <option value="3">3 повтора</option>
+                                <option value="5">5 повторов</option>
+                                <option value="6">6 повторов</option>
+                                <option value="8">8 повторов</option>
+                                <option value="10">10 повторов</option>
+                                <option value="12">12 повторов</option>
+                                <option value="15">15 повторов</option>
+                                <option value="20">20 повторов</option>
+                                <option value="25">25 повторов</option>
+                                <option value="30">30 повторов</option>
+                                <option value="50">50 повторов</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="add-exercise-actions">
+                            <button id="add-exercise-btn" class="btn-primary" disabled>
+                                <span class="btn-icon">💪</span>
+                                Добавить упражнение
+                            </button>
+                            <button id="add-superset-btn" class="btn-secondary" disabled>
+                                <span class="btn-icon">🔗</span>
+                                Добавить в суперсет
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercises List -->
+                <div id="exercises-list" class="exercises-list">
+                    <div class="empty-state" id="empty-workout">
+                        <div class="empty-icon">💪</div>
+                        <p>Твои упражнения появятся здесь</p>
+                        <p class="empty-hint">Используй простые dropdown выше</p>
+                    </div>
+                </div>
+
+                <div class="workout-actions">
+                    <button id="save-workout-btn" class="btn btn-success">💾 Сохранить</button>
+                    <button id="clear-workout-btn" class="btn btn-danger">🗑️ Очистить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Module -->
+        <div id="history-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" onclick="showScreen('main')">← Назад</button>
+                <h2 class="screen-title">История тренировок</h2>
+            </div>
+
+            <div class="history-content">
+                <div class="history-list">
+                    <!-- Sample History Items with Expandable Details -->
+                    <div class="history-item">
+                        <div class="history-header" onclick="toggleDetails(this)">
+                            <div class="history-date">Вчера</div>
+                            <div class="history-stats">
+                                <span>120 кг</span>
+                                <span>45 повторов</span>
+                                <span>3 упражнения</span>
+                            </div>
+                            <div class="history-toggle">
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="history-exercises">
+                            Жим лежа, Приседания, Становая тяга
+                        </div>
+                        <div class="history-details" style="display: none;">
+                            <div class="workout-detail-stats">
+                                <div class="stat-card">
+                                    <div class="stat-value">120</div>
+                                    <div class="stat-label">Тоннаж (кг)</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">45</div>
+                                    <div class="stat-label">Повторов</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">80</div>
+                                    <div class="stat-label">Макс вес (кг)</div>
+                                </div>
+                            </div>
+                            <div class="workout-detail-exercise">
+                                <h4>Жим лежа</h4>
+                                <div class="workout-detail-sets">
+                                    <div class="workout-detail-set">
+                                        <span>Подход 1</span>
+                                        <span>60 кг × 10</span>
+                                    </div>
+                                    <div class="workout-detail-set">
+                                        <span>Подход 2</span>
+                                        <span>80 кг × 8</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="history-item">
+                        <div class="history-header" onclick="toggleDetails(this)">
+                            <div class="history-date">3 дня назад</div>
+                            <div class="history-stats">
+                                <span>95 кг</span>
+                                <span>36 повторов</span>
+                                <span>2 упражнения</span>
+                            </div>
+                            <div class="history-toggle">
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="history-exercises">
+                            Подтягивания, Отжимания
+                        </div>
+                        <div class="history-details" style="display: none;">
+                            <div class="workout-detail-stats">
+                                <div class="stat-card">
+                                    <div class="stat-value">95</div>
+                                    <div class="stat-label">Тоннаж (кг)</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">36</div>
+                                    <div class="stat-label">Повторов</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">0</div>
+                                    <div class="stat-label">Макс вес (кг)</div>
+                                </div>
+                            </div>
+                            <div class="workout-detail-exercise">
+                                <h4>Подтягивания</h4>
+                                <div class="workout-detail-sets">
+                                    <div class="workout-detail-set">
+                                        <span>Подход 1</span>
+                                        <span>Свой вес × 12</span>
+                                    </div>
+                                    <div class="workout-detail-set">
+                                        <span>Подход 2</span>
+                                        <span>Свой вес × 10</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Module -->
+        <div id="stats-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" onclick="showScreen('main')">← Назад</button>
+                <h2 class="screen-title">Статистика</h2>
+            </div>
+
+            <div class="stats-content">
+                <!-- Overview Stats -->
+                <div class="stats-overview">
+                    <div class="stat-card">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label">Тренировок</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1,450</div>
+                        <div class="stat-label">Общий тоннаж (кг)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">120</div>
+                        <div class="stat-label">Средний тоннаж</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">Среда</div>
+                        <div class="stat-label">Лучший день</div>
+                    </div>
+                </div>
+
+                <!-- Exercise Selector for Charts -->
+                <div class="stats-section">
+                    <h3 class="section-title">📈 Прогресс по упражнениям</h3>
+                    <div class="exercise-selector">
+                        <select class="form-select">
+                            <option value="">Выберите упражнение для просмотра прогресса</option>
+                            <option value="bench_press">Жим лежа</option>
+                            <option value="squat">Приседания</option>
+                            <option value="deadlift">Становая тяга</option>
+                            <option value="pullups">Подтягивания</option>
+                        </select>
+                    </div>
+                    <div class="chart-placeholder" style="padding: 40px; text-align: center; background: var(--bg-card); border-radius: var(--radius-xl); margin-top: 20px; color: var(--text-secondary);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                        <p>Выберите упражнение для просмотра графика прогресса</p>
+                        <p style="font-size: 14px; margin-top: 8px;">Без модальных окон - все графики отображаются здесь</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple App Controller (No Complex Modules)
+        let currentScreen = 'main';
+        let currentWorkout = [];
+
+        // Initialize current date
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('ru-RU');
+
+        // Screen Navigation
+        function showScreen(screenName) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Show target screen
+            const targetScreen = document.getElementById(screenName + '-screen');
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+                currentScreen = screenName;
+            }
+        }
+
+        // Module card clicks
+        document.querySelectorAll('.module-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const module = this.dataset.module;
+                if (module) {
+                    showScreen(module);
+                }
+            });
+        });
+
+        // Exercise Form Logic
+        document.addEventListener('DOMContentLoaded', function() {
+            const exerciseSelect = document.getElementById('exercise-select');
+            const weightSelect = document.getElementById('weight-select');
+            const repsSelect = document.getElementById('reps-select');
+            const addBtn = document.getElementById('add-exercise-btn');
+            const supersetBtn = document.getElementById('add-superset-btn');
+            const exercisesList = document.getElementById('exercises-list');
+            const emptyWorkout = document.getElementById('empty-workout');
+
+            function updateButtons() {
+                const hasExercise = exerciseSelect.value;
+                const hasWeight = weightSelect.value;
+                const hasReps = repsSelect.value;
+                const isValid = hasExercise && (hasWeight || hasReps);
+                
+                addBtn.disabled = !isValid;
+                supersetBtn.disabled = !isValid;
+            }
+
+            function resetForm() {
+                exerciseSelect.value = '';
+                weightSelect.value = '';
+                repsSelect.value = '';
+                updateButtons();
+            }
+
+            function updateWorkoutStats() {
+                let totalTonnage = 0;
+                let totalReps = 0;
+                let maxWeight = 0;
+
+                currentWorkout.forEach(exercise => {
+                    const weight = parseFloat(exercise.weight) || 0;
+                    const reps = parseInt(exercise.reps) || 0;
+                    
+                    totalTonnage += weight * reps;
+                    totalReps += reps;
+                    maxWeight = Math.max(maxWeight, weight);
+                });
+
+                document.getElementById('workout-tonnage').textContent = Math.round(totalTonnage);
+                document.getElementById('workout-reps').textContent = totalReps;
+                document.getElementById('workout-max-weight').textContent = Math.round(maxWeight);
+            }
+
+            function renderExercises() {
+                if (currentWorkout.length === 0) {
+                    emptyWorkout.style.display = 'flex';
+                    return;
+                }
+
+                emptyWorkout.style.display = 'none';
+                
+                const exercisesHtml = currentWorkout.map((exercise, index) => `
+                    <div class="exercise-item" style="background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: var(--radius-xl); padding: var(--spacing-lg); margin-bottom: var(--spacing-md); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="color: var(--text-primary); margin-bottom: 8px;">${exercise.name}</h4>
+                            <p style="color: var(--text-secondary); font-size: 14px;">${exercise.weight} кг × ${exercise.reps} повторов</p>
+                        </div>
+                        <button onclick="removeExercise(${index})" style="background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 8px; color: var(--text-secondary); cursor: pointer;">🗑️</button>
+                    </div>
+                `).join('');
+
+                exercisesList.innerHTML = exercisesHtml;
+            }
+
+            exerciseSelect.addEventListener('change', updateButtons);
+            weightSelect.addEventListener('change', updateButtons);
+            repsSelect.addEventListener('change', updateButtons);
+
+            addBtn.addEventListener('click', function() {
+                const exercise = {
+                    name: exerciseSelect.value,
+                    weight: weightSelect.value,
+                    reps: repsSelect.value
+                };
+                
+                currentWorkout.push(exercise);
+                updateWorkoutStats();
+                renderExercises();
+                resetForm();
+                
+                // Success feedback
+                const originalText = addBtn.innerHTML;
+                addBtn.innerHTML = '<span class="btn-icon">✅</span>Добавлено!';
+                addBtn.style.background = 'var(--success-color)';
+                
+                setTimeout(() => {
+                    addBtn.innerHTML = originalText;
+                    addBtn.style.background = '';
+                }, 1000);
+            });
+
+            supersetBtn.addEventListener('click', function() {
+                const exercise = {
+                    name: exerciseSelect.value + ' (суперсет)',
+                    weight: weightSelect.value,
+                    reps: repsSelect.value
+                };
+                
+                currentWorkout.push(exercise);
+                updateWorkoutStats();
+                renderExercises();
+                resetForm();
+                
+                // Success feedback
+                const originalText = supersetBtn.innerHTML;
+                supersetBtn.innerHTML = '<span class="btn-icon">✅</span>Добавлено!';
+                supersetBtn.style.background = 'var(--success-color)';
+                
+                setTimeout(() => {
+                    supersetBtn.innerHTML = originalText;
+                    supersetBtn.style.background = '';
+                }, 1000);
+            });
+
+            // Clear workout
+            document.getElementById('clear-workout-btn').addEventListener('click', function() {
+                if (confirm('Очистить текущую тренировку?')) {
+                    currentWorkout = [];
+                    updateWorkoutStats();
+                    renderExercises();
+                }
+            });
+
+            // Save workout
+            document.getElementById('save-workout-btn').addEventListener('click', function() {
+                if (currentWorkout.length === 0) {
+                    alert('Добавьте хотя бы одно упражнение');
+                    return;
+                }
+                
+                alert(`Тренировка сохранена!\n${currentWorkout.length} упражнений\nТоннаж: ${document.getElementById('workout-tonnage').textContent} кг`);
+                currentWorkout = [];
+                updateWorkoutStats();
+                renderExercises();
+            });
+
+            updateButtons();
+        });
+
+        // History toggle function
+        function toggleDetails(header) {
+            const item = header.closest('.history-item');
+            const details = item.querySelector('.history-details');
+            const icon = item.querySelector('.toggle-icon');
+            
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+                icon.textContent = '▲';
+                item.classList.add('expanded');
+            } else {
+                details.style.display = 'none';
+                icon.textContent = '▼';
+                item.classList.remove('expanded');
+            }
+        }
+
+        // Remove exercise function
+        function removeExercise(index) {
+            currentWorkout.splice(index, 1);
+            
+            // Update stats and render
+            let totalTonnage = 0;
+            let totalReps = 0;
+            let maxWeight = 0;
+
+            currentWorkout.forEach(exercise => {
+                const weight = parseFloat(exercise.weight) || 0;
+                const reps = parseInt(exercise.reps) || 0;
+                
+                totalTonnage += weight * reps;
+                totalReps += reps;
+                maxWeight = Math.max(maxWeight, weight);
+            });
+
+            document.getElementById('workout-tonnage').textContent = Math.round(totalTonnage);
+            document.getElementById('workout-reps').textContent = totalReps;
+            document.getElementById('workout-max-weight').textContent = Math.round(maxWeight);
+            
+            // Re-render exercises
+            const exercisesList = document.getElementById('exercises-list');
+            const emptyWorkout = document.getElementById('empty-workout');
+            
+            if (currentWorkout.length === 0) {
+                emptyWorkout.style.display = 'flex';
+                return;
+            }
+
+            emptyWorkout.style.display = 'none';
+            
+            const exercisesHtml = currentWorkout.map((exercise, index) => `
+                <div class="exercise-item" style="background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: var(--radius-xl); padding: var(--spacing-lg); margin-bottom: var(--spacing-md); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="color: var(--text-primary); margin-bottom: 8px;">${exercise.name}</h4>
+                        <p style="color: var(--text-secondary); font-size: 14px;">${exercise.weight} кг × ${exercise.reps} повторов</p>
+                    </div>
+                    <button onclick="removeExercise(${index})" style="background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 8px; color: var(--text-secondary); cursor: pointer;">🗑️</button>
+                </div>
+            `).join('');
+
+            exercisesList.innerHTML = exercisesHtml;
+        }
+    </script>
+</body>
+</html>

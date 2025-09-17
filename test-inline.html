@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Inline Interface</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+    <div id="app">
+        <div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+            <h1>🏋️ Test Inline Interface</h1>
+            
+            <!-- Add Exercise Section (Always Visible) -->
+            <div id="add-exercise-section" class="add-exercise-section">
+                <div class="add-exercise-header">
+                    <h3 class="add-exercise-title">➕ Добавить упражнение</h3>
+                </div>
+                
+                <div class="add-exercise-form">
+                    <!-- Exercise Selection -->
+                    <div class="form-group">
+                        <label class="form-label">Упражнение</label>
+                        <div class="exercise-selector">
+                            <input type="text" id="exercise-search" placeholder="Поиск или выбор упражнения..." class="form-input exercise-input">
+                            <div id="exercise-dropdown" class="exercise-dropdown" style="display: none;">
+                                <!-- Exercise options will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Parameters Setup -->
+                    <div class="parameters-row">
+                        <div class="form-group">
+                            <label class="form-label">Вес (кг)</label>
+                            <div class="input-with-controls">
+                                <button type="button" class="control-btn minus" data-target="weight" data-step="-1">−</button>
+                                <input type="number" id="weight-input" value="0" min="0" step="0.5" class="form-input number-input">
+                                <button type="button" class="control-btn plus" data-target="weight" data-step="1">+</button>
+                                <div class="quick-controls">
+                                    <button type="button" class="quick-btn" data-target="weight" data-step="-5">-5</button>
+                                    <button type="button" class="quick-btn" data-target="weight" data-step="5">+5</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Повторения</label>
+                            <div class="input-with-controls">
+                                <button type="button" class="control-btn minus" data-target="reps" data-step="-1">−</button>
+                                <input type="number" id="reps-input" value="0" min="0" step="1" class="form-input number-input">
+                                <button type="button" class="control-btn plus" data-target="reps" data-step="1">+</button>
+                                <div class="quick-controls">
+                                    <button type="button" class="quick-btn" data-target="reps" data-step="-5">-5</button>
+                                    <button type="button" class="quick-btn" data-target="reps" data-step="5">+5</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="add-exercise-actions">
+                        <button id="add-exercise-btn" class="btn-primary" disabled>
+                            <span class="btn-icon">💪</span>
+                            Добавить упражнение
+                        </button>
+                        <button id="add-superset-btn" class="btn-secondary" disabled>
+                            <span class="btn-icon">🔗</span>
+                            Добавить суперсет
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exercise List (Test Output) -->
+            <div id="exercises-list" style="margin-top: 20px;">
+                <h3>Добавленные упражнения:</h3>
+                <div id="exercise-output" style="background: var(--bg-card); padding: 20px; border-radius: 12px; min-height: 100px;">
+                    Упражнения появятся здесь...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Scripts -->
+    <script>
+        // Simple Config
+        const EXERCISES = [
+            'Жим лежа',
+            'Приседания',
+            'Становая тяга',
+            'Жим стоя',
+            'Подтягивания',
+            'Отжимания',
+            'Планка',
+            'Сгибания на бицепс',
+            'Жим гантелей',
+            'Тяга блока'
+        ];
+
+        // Simple Utils
+        const Utils = {
+            generateId: () => Math.random().toString(36).substr(2, 9),
+            showSuccess: (msg) => alert('✅ ' + msg),
+            showError: (msg) => alert('❌ ' + msg),
+            hapticFeedback: (type) => {
+                if (navigator.vibrate) {
+                    switch(type) {
+                        case 'light': navigator.vibrate(10); break;
+                        case 'success': navigator.vibrate([10, 50, 10]); break;
+                        default: navigator.vibrate(25);
+                    }
+                }
+            }
+        };
+
+        // Mock WorkoutModule
+        window.WorkoutModule = {
+            addExerciseToWorkout: (exercise) => {
+                const output = document.getElementById('exercise-output');
+                const exerciseDiv = document.createElement('div');
+                exerciseDiv.style.cssText = 'margin: 10px 0; padding: 10px; background: var(--bg-glass); border-radius: 8px; border: 1px solid var(--border-glass);';
+                
+                if (exercise.type === 'superset') {
+                    exerciseDiv.innerHTML = `
+                        <strong>🔗 Суперсет:</strong><br>
+                        1. ${exercise.exercises[0].name} - ${exercise.exercises[0].sets[0].weight}кг x ${exercise.exercises[0].sets[0].reps}<br>
+                        2. ${exercise.exercises[1].name} - ${exercise.exercises[1].sets[0].weight}кг x ${exercise.exercises[1].sets[0].reps}
+                    `;
+                } else {
+                    exerciseDiv.innerHTML = `
+                        <strong>💪 ${exercise.name}</strong><br>
+                        ${exercise.sets[0].weight}кг x ${exercise.sets[0].reps} повторений
+                    `;
+                }
+                
+                output.appendChild(exerciseDiv);
+            }
+        };
+    </script>
+    
+    <!-- Include our components -->
+    <script src="js/components.js"></script>
+    <script>
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            if (Components.InlineExerciseBuilder) {
+                Components.InlineExerciseBuilder.init();
+            }
+        });
+    </script>
+</body>
+</html>

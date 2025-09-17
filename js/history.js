@@ -71,7 +71,7 @@ const HistoryModule = {
         item.setAttribute('data-workout-index', index);
         
         item.innerHTML = `
-            <div class="history-header">
+            <div class="history-header" data-toggle="details">
                 <div class="history-date">
                     ${Utils.formatDateRelative(workout.date)}
                 </div>
@@ -80,14 +80,23 @@ const HistoryModule = {
                     <span>${stats.reps} повторов</span>
                     <span>${workout.exercises?.length || 0} упражнений</span>
                 </div>
+                <div class="history-toggle">
+                    <span class="toggle-icon">▼</span>
+                </div>
             </div>
             <div class="history-exercises">
                 ${exerciseNames.slice(0, 3).join(', ')}${exerciseNames.length > 3 ? ` и ещё ${exerciseNames.length - 3}` : ''}
             </div>
+            <div class="history-details" style="display: none;">
+                ${this.renderWorkoutDetail(workout)}
+            </div>
         `;
         
-        // Add click event
-        item.addEventListener('click', () => this.showWorkoutDetail(workout));
+        // Add click event for expanding details
+        const header = item.querySelector('.history-header');
+        if (header) {
+            header.addEventListener('click', () => this.toggleWorkoutDetails(item));
+        }
         
         // Add animation
         item.classList.add('fade-in');
@@ -116,23 +125,27 @@ const HistoryModule = {
         return names;
     },
     
-    showWorkoutDetail(workout) {
-        const modal = document.getElementById('workout-detail-modal');
-        const titleElement = document.getElementById('workout-detail-title');
-        const contentElement = document.getElementById('workout-detail-content');
+    toggleWorkoutDetails(item) {
+        const detailsSection = item.querySelector('.history-details');
+        const toggleIcon = item.querySelector('.toggle-icon');
         
-        if (!modal || !titleElement || !contentElement) return;
+        if (!detailsSection || !toggleIcon) return;
         
-        // Set title
-        titleElement.textContent = `Тренировка ${Utils.formatDateRelative(workout.date)}`;
+        const isVisible = detailsSection.style.display !== 'none';
         
-        // Render content
-        contentElement.innerHTML = this.renderWorkoutDetail(workout);
+        if (isVisible) {
+            // Hide details
+            detailsSection.style.display = 'none';
+            toggleIcon.textContent = '▼';
+            item.classList.remove('expanded');
+        } else {
+            // Show details
+            detailsSection.style.display = 'block';
+            toggleIcon.textContent = '▲';
+            item.classList.add('expanded');
+        }
         
-        // Show modal
-        Components.Modal.show('workout-detail-modal');
-        
-        Utils.hapticFeedback('light');
+        if (Utils?.hapticFeedback) Utils.hapticFeedback('light');
     },
     
     renderWorkoutDetail(workout) {

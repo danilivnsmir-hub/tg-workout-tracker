@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏋️ Fitness Hub - Simplified</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <h1 class="app-title">🏋️ Fitness Hub</h1>
+        </header>
+
+        <!-- Workout Stats -->
+        <div class="workout-stats">
+            <div class="stat-item">
+                <span class="stat-value" id="workout-tonnage">0</span>
+                <span class="stat-label">кг</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="workout-reps">0</span>
+                <span class="stat-label">повторов</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="workout-exercises">0</span>
+                <span class="stat-label">упражнений</span>
+            </div>
+        </div>
+
+        <!-- Add Exercise Section (Always Visible) -->
+        <div id="add-exercise-section" class="add-exercise-section">
+            <div class="add-exercise-header">
+                <h3 class="add-exercise-title">➕ Добавить упражнение</h3>
+            </div>
+            
+            <div class="add-exercise-form">
+                <!-- Exercise Selection -->
+                <div class="form-group">
+                    <label class="form-label">Упражнение</label>
+                    <div class="exercise-selector">
+                        <input type="text" id="exercise-search" placeholder="Поиск или выбор упражнения..." class="form-input exercise-input">
+                        <div id="exercise-dropdown" class="exercise-dropdown" style="display: none;">
+                            <!-- Exercise options will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Parameters Setup -->
+                <div class="parameters-row">
+                    <div class="form-group">
+                        <label class="form-label">Вес (кг)</label>
+                        <div class="input-with-controls">
+                            <button type="button" class="control-btn minus" data-target="weight" data-step="-1">−</button>
+                            <input type="number" id="weight-input" value="0" min="0" step="0.5" class="form-input number-input">
+                            <button type="button" class="control-btn plus" data-target="weight" data-step="1">+</button>
+                            <div class="quick-controls">
+                                <button type="button" class="quick-btn" data-target="weight" data-step="-5">-5</button>
+                                <button type="button" class="quick-btn" data-target="weight" data-step="5">+5</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Повторения</label>
+                        <div class="input-with-controls">
+                            <button type="button" class="control-btn minus" data-target="reps" data-step="-1">−</button>
+                            <input type="number" id="reps-input" value="0" min="0" step="1" class="form-input number-input">
+                            <button type="button" class="control-btn plus" data-target="reps" data-step="1">+</button>
+                            <div class="quick-controls">
+                                <button type="button" class="quick-btn" data-target="reps" data-step="-5">-5</button>
+                                <button type="button" class="quick-btn" data-target="reps" data-step="5">+5</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="add-exercise-actions">
+                    <button id="add-exercise-btn" class="btn-primary" disabled>
+                        <span class="btn-icon">💪</span>
+                        Добавить упражнение
+                    </button>
+                    <button id="add-superset-btn" class="btn-secondary" disabled>
+                        <span class="btn-icon">🔗</span>
+                        Добавить суперсет
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exercises List -->
+        <div id="exercises-list" class="exercises-list">
+            <div class="empty-state" id="empty-workout">
+                <div class="empty-icon">💪</div>
+                <p>Твои упражнения появятся здесь</p>
+                <p class="empty-hint">Используй форму выше для добавления</p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="padding: 20px; display: flex; gap: 15px;">
+            <button id="clear-all-btn" class="btn btn-danger" style="flex: 1;">🗑️ Очистить все</button>
+            <button id="save-workout-btn" class="btn btn-success" style="flex: 2;">💾 Сохранить тренировку</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Simple Configuration
+        const EXERCISES = [
+            'Жим лежа',
+            'Приседания',
+            'Становая тяга',
+            'Жим стоя', 
+            'Подтягивания',
+            'Отжимания',
+            'Планка',
+            'Сгибания на бицепс',
+            'Жим гантелей',
+            'Тяга блока',
+            'Разгибания ног',
+            'Сгибания ног',
+            'Жим ногами',
+            'Подъемы на носки',
+            'Французский жим',
+            'Молотки',
+            'Тяга штанги в наклоне',
+            'Махи гантелями'
+        ];
+
+        const Utils = {
+            generateId: () => Math.random().toString(36).substr(2, 9),
+            showSuccess: (msg) => {
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 9999;
+                    background: var(--success-color); color: white; padding: 15px 20px;
+                    border-radius: 8px; box-shadow: var(--shadow-glass);
+                    animation: slideIn 0.3s ease;
+                `;
+                toast.textContent = '✅ ' + msg;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            },
+            showError: (msg) => {
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 9999;
+                    background: var(--danger-color); color: white; padding: 15px 20px;
+                    border-radius: 8px; box-shadow: var(--shadow-glass);
+                `;
+                toast.textContent = '❌ ' + msg;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            },
+            hapticFeedback: (type) => {
+                if (navigator.vibrate) {
+                    switch(type) {
+                        case 'light': navigator.vibrate(10); break;
+                        case 'success': navigator.vibrate([10, 50, 10]); break;
+                        default: navigator.vibrate(25);
+                    }
+                }
+            }
+        };
+
+        // Simple Workout Manager
+        class WorkoutManager {
+            constructor() {
+                this.exercises = [];
+                this.stats = { tonnage: 0, reps: 0, exercises: 0 };
+            }
+
+            addExercise(exercise) {
+                this.exercises.push(exercise);
+                this.updateStats();
+                this.renderExercises();
+                this.updateEmptyState();
+            }
+
+            updateStats() {
+                let tonnage = 0;
+                let reps = 0;
+
+                this.exercises.forEach(exercise => {
+                    if (exercise.type === 'superset') {
+                        exercise.exercises.forEach(ex => {
+                            ex.sets.forEach(set => {
+                                tonnage += set.weight * set.reps;
+                                reps += set.reps;
+                            });
+                        });
+                    } else {
+                        exercise.sets.forEach(set => {
+                            tonnage += set.weight * set.reps;
+                            reps += set.reps;
+                        });
+                    }
+                });
+
+                this.stats = { tonnage, reps, exercises: this.exercises.length };
+                
+                document.getElementById('workout-tonnage').textContent = Math.round(tonnage);
+                document.getElementById('workout-reps').textContent = reps;
+                document.getElementById('workout-exercises').textContent = this.exercises.length;
+            }
+
+            renderExercises() {
+                const exercisesList = document.getElementById('exercises-list');
+                const emptyState = document.getElementById('empty-workout');
+                
+                // Clear existing exercises (keep empty state)
+                const exerciseElements = exercisesList.querySelectorAll('.exercise-item');
+                exerciseElements.forEach(el => el.remove());
+
+                this.exercises.forEach((exercise, index) => {
+                    const exerciseDiv = document.createElement('div');
+                    exerciseDiv.className = 'exercise-item';
+                    exerciseDiv.style.cssText = `
+                        background: var(--bg-card); margin: var(--spacing-md);
+                        border-radius: var(--radius-2xl); padding: var(--spacing-lg);
+                        border: 1px solid var(--border-glass);
+                        box-shadow: var(--shadow-glass);
+                        backdrop-filter: blur(30px); position: relative;
+                    `;
+
+                    if (exercise.type === 'superset') {
+                        exerciseDiv.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0; color: var(--warning-color);">🔗 Суперсет</h4>
+                                <button class="remove-btn" data-index="${index}" style="
+                                    background: var(--danger-color); color: white; border: none;
+                                    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+                                ">✕</button>
+                            </div>
+                            <div style="display: grid; gap: 10px;">
+                                <div style="background: var(--bg-glass); padding: 12px; border-radius: 8px;">
+                                    <strong>${exercise.exercises[0].name}</strong><br>
+                                    ${exercise.exercises[0].sets[0].weight}кг × ${exercise.exercises[0].sets[0].reps}
+                                </div>
+                                <div style="background: var(--bg-glass); padding: 12px; border-radius: 8px;">
+                                    <strong>${exercise.exercises[1].name}</strong><br>
+                                    ${exercise.exercises[1].sets[0].weight}кг × ${exercise.exercises[1].sets[0].reps}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        exerciseDiv.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0; color: var(--primary-color);">💪 ${exercise.name}</h4>
+                                <button class="remove-btn" data-index="${index}" style="
+                                    background: var(--danger-color); color: white; border: none;
+                                    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+                                ">✕</button>
+                            </div>
+                            <div style="background: var(--bg-glass); padding: 12px; border-radius: 8px;">
+                                <strong>${exercise.sets[0].weight}кг × ${exercise.sets[0].reps} повторений</strong>
+                            </div>
+                        `;
+                    }
+
+                    exercisesList.appendChild(exerciseDiv);
+
+                    // Add remove functionality
+                    const removeBtn = exerciseDiv.querySelector('.remove-btn');
+                    removeBtn.addEventListener('click', () => this.removeExercise(index));
+                });
+            }
+
+            removeExercise(index) {
+                this.exercises.splice(index, 1);
+                this.updateStats();
+                this.renderExercises();
+                this.updateEmptyState();
+                Utils.showSuccess('Упражнение удалено');
+            }
+
+            updateEmptyState() {
+                const emptyState = document.getElementById('empty-workout');
+                if (this.exercises.length === 0) {
+                    emptyState.style.display = 'flex';
+                } else {
+                    emptyState.style.display = 'none';
+                }
+            }
+
+            clear() {
+                this.exercises = [];
+                this.updateStats();
+                this.renderExercises();
+                this.updateEmptyState();
+                Utils.showSuccess('Тренировка очищена');
+            }
+
+            save() {
+                const workout = {
+                    date: new Date().toLocaleDateString(),
+                    exercises: this.exercises,
+                    stats: this.stats,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Save to localStorage
+                const savedWorkouts = JSON.parse(localStorage.getItem('fitness_workouts') || '[]');
+                savedWorkouts.push(workout);
+                localStorage.setItem('fitness_workouts', JSON.stringify(savedWorkouts));
+                
+                Utils.showSuccess('Тренировка сохранена!');
+            }
+        }
+
+        // Initialize
+        const workoutManager = new WorkoutManager();
+        
+        // Mock WorkoutModule for components
+        window.WorkoutModule = {
+            addExerciseToWorkout: (exercise) => workoutManager.addExercise(exercise)
+        };
+    </script>
+
+    <!-- Include our components -->
+    <script src="js/components.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize inline exercise builder
+            if (Components.InlineExerciseBuilder) {
+                Components.InlineExerciseBuilder.init();
+            }
+
+            // Add clear and save functionality
+            document.getElementById('clear-all-btn').addEventListener('click', () => {
+                if (confirm('Очистить всю тренировку?')) {
+                    workoutManager.clear();
+                }
+            });
+
+            document.getElementById('save-workout-btn').addEventListener('click', () => {
+                if (workoutManager.exercises.length === 0) {
+                    Utils.showError('Нет упражнений для сохранения');
+                    return;
+                }
+                workoutManager.save();
+            });
+
+            // Initialize empty state
+            workoutManager.updateEmptyState();
+        });
+    </script>
+</body>
+</html>
