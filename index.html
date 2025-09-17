@@ -212,24 +212,35 @@
             </div>
         </div>
 
-      <div id="workout-entry">
-  <select id="exerciseSelect">
-    <option value="">Выбери упражнение</option>
-  </select>
+        <!-- Value Picker Modal -->
+        <div id="picker-modal" class="modal">
+            <div class="modal-header">
+                <h3 id="picker-title">Выбери значение</h3>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="picker-container">
+                    <div id="picker-wheel" class="picker-wheel">
+                        <!-- Picker values will be populated here -->
+                    </div>
+                </div>
+                <button id="picker-confirm" class="btn btn-primary">Подтвердить</button>
+            </div>
+        </div>
 
-  <select id="weightSelect">
-    <option value="">Вес</option>
-  </select>
-
-  <select id="repsSelect">
-    <option value="">Повторы</option>
-  </select>
-
-  <button id="addSetBtn">Добавить подход</button>
-  <button id="saveWorkoutBtn">Сохранить тренировку</button>
-</div>
-
-<div id="workoutList"></div>
+        <!-- Workout Detail Modal -->
+        <div id="workout-detail-modal" class="modal large">
+            <div class="modal-header">
+                <h3 id="workout-detail-title">Детали тренировки</h3>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div id="workout-detail-content">
+                    <!-- Workout details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- NEW: Exercise Addition Stepper Interface -->
     <div id="exercise-stepper" class="exercise-stepper">
