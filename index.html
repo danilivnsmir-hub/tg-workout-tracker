@@ -347,9 +347,343 @@
     </div>
 
     <script>
-        // Simple App Controller (No Complex Modules)
+        // Enhanced App Controller with Auto-Save Functionality
         let currentScreen = 'main';
         let currentWorkout = [];
+        let autosaveTimer = null;
+        let lastSaveTime = null;
+        let isDirty = false;
+
+        // Storage System with Telegram CloudStorage integration
+        const StorageSystem = {
+            isCloudStorageAvailable() {
+                try {
+                    return (
+                        typeof window !== 'undefined' &&
+                        window.Telegram &&
+                        window.Telegram.WebApp &&
+                        window.Telegram.WebApp.CloudStorage
+                    );
+                } catch (error) {
+                    console.warn('CloudStorage not available:', error);
+                    return false;
+                }
+            },
+
+            async get(key) {
+                console.log(`Getting ${key} from storage...`);
+                
+                if (this.isCloudStorageAvailable()) {
+                    try {
+                        const value = await this.getFromCloud(key);
+                        console.log(`Got ${key} from CloudStorage:`, value);
+                        return value;
+                    } catch (error) {
+                        console.warn(`CloudStorage failed for ${key}, falling back to localStorage:`, error);
+                    }
+                }
+                
+                // Fallback to localStorage
+                try {
+                    const value = localStorage.getItem(key);
+                    const parsed = value ? JSON.parse(value) : null;
+                    console.log(`Got ${key} from localStorage:`, parsed);
+                    return parsed;
+                } catch (error) {
+                    console.error(`localStorage failed for ${key}:`, error);
+                    return null;
+                }
+            },
+
+            async set(key, value) {
+                console.log(`Saving ${key} to storage:`, value);
+                
+                if (this.isCloudStorageAvailable()) {
+                    try {
+                        await this.saveToCloud(key, value);
+                        console.log(`Saved ${key} to CloudStorage successfully`);
+                        
+                        // Also save to localStorage as backup
+                        try {
+                            localStorage.setItem(key, JSON.stringify(value));
+                        } catch (localError) {
+                            console.warn('Failed to backup to localStorage:', localError);
+                        }
+                        
+                        return true;
+                    } catch (error) {
+                        console.warn(`CloudStorage failed for ${key}, falling back to localStorage:`, error);
+                    }
+                }
+                
+                // Fallback to localStorage
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    console.log(`Saved ${key} to localStorage successfully`);
+                    return true;
+                } catch (error) {
+                    console.error(`localStorage failed for ${key}:`, error);
+                    throw error;
+                }
+            },
+
+            getFromCloud(key) {
+                return new Promise((resolve, reject) => {
+                    window.Telegram.WebApp.CloudStorage.getItem(key, (error, value) => {
+                        if (error) {
+                            reject(new Error(error));
+                        } else {
+                            try {
+                                resolve(value ? JSON.parse(value) : null);
+                            } catch (parseError) {
+                                console.error(`Failed to parse ${key}:`, parseError);
+                                resolve(null);
+                            }
+                        }
+                    });
+                });
+            },
+
+            saveToCloud(key, value) {
+                return new Promise((resolve, reject) => {
+                    const serialized = JSON.stringify(value);
+                    window.Telegram.WebApp.CloudStorage.setItem(key, serialized, (error, success) => {
+                        if (error) {
+                            reject(new Error(error));
+                        } else {
+                            resolve(success);
+                        }
+                    });
+                });
+            }
+        };
+
+        // Auto-save functionality
+        function startAutosave() {
+            console.log('Starting autosave timer...');
+            
+            if (autosaveTimer) {
+                clearInterval(autosaveTimer);
+            }
+            
+            autosaveTimer = setInterval(async () => {
+                if (isDirty && currentWorkout.length > 0) {
+                    await saveDraft();
+                }
+            }, 30000); // 30 seconds
+        }
+
+        async function saveDraft() {
+            if (currentWorkout.length === 0) {
+                console.log('No workout data to save');
+                return;
+            }
+
+            console.log('Saving draft workout...');
+            showSaveStatus('Сохранение...', 'saving');
+            
+            try {
+                const draftData = {
+                    exercises: currentWorkout,
+                    date: new Date().toISOString(),
+                    stats: getCurrentWorkoutStats()
+                };
+                
+                await StorageSystem.set('draftWorkout', draftData);
+                lastSaveTime = new Date();
+                isDirty = false;
+                
+                console.log('Draft saved successfully:', draftData);
+                showSaveStatus('Сохранено', 'success');
+                
+                // Hide save status after 2 seconds
+                setTimeout(() => hideSaveStatus(), 2000);
+                
+            } catch (error) {
+                console.error('Failed to save draft:', error);
+                showSaveStatus('Ошибка сохранения', 'error');
+                setTimeout(() => hideSaveStatus(), 3000);
+            }
+        }
+
+        async function loadDraft() {
+            console.log('Loading draft workout...');
+            
+            try {
+                const draftData = await StorageSystem.get('draftWorkout');
+                
+                if (draftData) {
+                    const draftDate = new Date(draftData.date);
+                    const today = new Date();
+                    const isToday = draftDate.toDateString() === today.toDateString();
+                    
+                    if (isToday && draftData.exercises && draftData.exercises.length > 0) {
+                        console.log('Found draft for today:', draftData);
+                        
+                        // Show draft recovery notification
+                        showDraftRecovery(draftData);
+                        return draftData;
+                    } else if (!isToday) {
+                        console.log('Draft is from different day, clearing it');
+                        await StorageSystem.set('draftWorkout', null);
+                    }
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Failed to load draft:', error);
+                return null;
+            }
+        }
+
+        function showDraftRecovery(draftData) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+            `;
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: var(--bg-card, #1e1e1e);
+                border: 1px solid var(--border-glass, #333);
+                border-radius: 16px;
+                padding: 24px;
+                max-width: 300px;
+                text-align: center;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            `;
+            
+            modal.innerHTML = `
+                <div style="font-size: 48px; margin-bottom: 16px;">🔄</div>
+                <h3 style="color: var(--text-primary, #fff); margin-bottom: 12px;">Найден черновик</h3>
+                <p style="color: var(--text-secondary, #aaa); margin-bottom: 20px;">
+                    Найдена незавершенная тренировка с ${draftData.exercises.length} упражнениями
+                </p>
+                <div style="display: flex; gap: 12px;">
+                    <button id="restore-draft" style="
+                        background: var(--success-color, #4CAF50);
+                        color: white;
+                        border: none;
+                        padding: 12px 16px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        flex: 1;
+                    ">Восстановить</button>
+                    <button id="start-new" style="
+                        background: var(--bg-glass, #333);
+                        color: var(--text-primary, #fff);
+                        border: 1px solid var(--border-glass, #555);
+                        padding: 12px 16px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        flex: 1;
+                    ">Начать заново</button>
+                </div>
+            `;
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            // Handle buttons
+            document.getElementById('restore-draft').onclick = () => {
+                currentWorkout = draftData.exercises || [];
+                updateWorkoutStats();
+                renderExercises();
+                document.body.removeChild(overlay);
+                showSaveStatus('Черновик восстановлен', 'success');
+                setTimeout(() => hideSaveStatus(), 2000);
+            };
+            
+            document.getElementById('start-new').onclick = () => {
+                StorageSystem.set('draftWorkout', null); // Clear draft
+                document.body.removeChild(overlay);
+            };
+        }
+
+        function getCurrentWorkoutStats() {
+            let totalTonnage = 0;
+            let totalReps = 0;
+            let maxWeight = 0;
+
+            currentWorkout.forEach(exercise => {
+                const weight = parseFloat(exercise.weight) || 0;
+                const reps = parseInt(exercise.reps) || 0;
+                
+                totalTonnage += weight * reps;
+                totalReps += reps;
+                maxWeight = Math.max(maxWeight, weight);
+            });
+
+            return {
+                tonnage: Math.round(totalTonnage),
+                reps: totalReps,
+                maxWeight: Math.round(maxWeight)
+            };
+        }
+
+        function showSaveStatus(message, type = 'info') {
+            let statusEl = document.getElementById('save-status');
+            
+            if (!statusEl) {
+                statusEl = document.createElement('div');
+                statusEl.id = 'save-status';
+                statusEl.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    color: white;
+                    font-size: 14px;
+                    z-index: 1000;
+                    transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                `;
+                document.body.appendChild(statusEl);
+            }
+            
+            const colors = {
+                saving: '#FFA726',
+                success: '#4CAF50',
+                error: '#F44336',
+                info: '#2196F3'
+            };
+            
+            const icons = {
+                saving: '⏳',
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️'
+            };
+            
+            statusEl.style.backgroundColor = colors[type] || colors.info;
+            statusEl.innerHTML = `${icons[type] || icons.info} ${message}`;
+            statusEl.style.opacity = '1';
+            statusEl.style.transform = 'translateX(0)';
+        }
+
+        function hideSaveStatus() {
+            const statusEl = document.getElementById('save-status');
+            if (statusEl) {
+                statusEl.style.opacity = '0';
+                statusEl.style.transform = 'translateX(100%)';
+            }
+        }
+
+        function markDirty() {
+            isDirty = true;
+        }
 
         // Initialize current date
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('ru-RU');
@@ -366,6 +700,9 @@
             if (targetScreen) {
                 targetScreen.classList.add('active');
                 currentScreen = screenName;
+                
+                // Update Telegram WebApp UI
+                updateTelegramUI();
             }
         }
 
@@ -379,8 +716,174 @@
             });
         });
 
+        // Initialize Telegram WebApp
+        async function initTelegramWebApp() {
+            if (window.Telegram?.WebApp) {
+                const tg = window.Telegram.WebApp;
+                
+                console.log('Initializing Telegram WebApp...');
+                
+                // Configure WebApp
+                tg.ready();
+                tg.expand();
+                
+                // Set theme
+                if (tg.colorScheme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+                
+                // Handle back button
+                tg.BackButton.onClick(() => {
+                    if (currentScreen !== 'main') {
+                        showScreen('main');
+                    }
+                });
+                
+                // Handle main button (save workout)
+                tg.MainButton.onClick(async () => {
+                    if (currentScreen === 'workout' && currentWorkout.length > 0) {
+                        await saveCompleteWorkout();
+                    }
+                });
+                
+                console.log('Telegram WebApp initialized');
+                return true;
+            } else {
+                console.warn('Telegram WebApp not available - running in web mode');
+                return false;
+            }
+        }
+
+        // Save completed workout
+        async function saveCompleteWorkout() {
+            if (currentWorkout.length === 0) {
+                alert('Добавьте хотя бы одно упражнение');
+                return;
+            }
+            
+            showSaveStatus('Сохранение тренировки...', 'saving');
+            
+            try {
+                // Prepare workout data
+                const workoutData = {
+                    id: Date.now().toString(),
+                    date: new Date().toISOString(),
+                    exercises: currentWorkout,
+                    stats: getCurrentWorkoutStats(),
+                    duration: 0 // TODO: Track workout duration
+                };
+                
+                // Load existing workouts
+                const existingWorkouts = await StorageSystem.get('workouts') || [];
+                existingWorkouts.push(workoutData);
+                
+                // Save workouts
+                await StorageSystem.set('workouts', existingWorkouts);
+                
+                // Clear draft
+                await StorageSystem.set('draftWorkout', null);
+                
+                // Reset current workout
+                currentWorkout = [];
+                isDirty = false;
+                updateWorkoutStats();
+                renderExercises();
+                
+                showSaveStatus('Тренировка сохранена!', 'success');
+                
+                // Show success message
+                alert(`Тренировка сохранена!\n${workoutData.exercises.length} упражнений\nТоннаж: ${workoutData.stats.tonnage} кг`);
+                
+                // Hide save status after showing alert
+                setTimeout(() => hideSaveStatus(), 2000);
+                
+            } catch (error) {
+                console.error('Failed to save workout:', error);
+                showSaveStatus('Ошибка сохранения', 'error');
+                alert('Ошибка при сохранении тренировки');
+                setTimeout(() => hideSaveStatus(), 3000);
+            }
+        }
+
+        // Handle app lifecycle events
+        let lifecycleHandlersSetup = false;
+        function setupLifecycleHandlers() {
+            if (lifecycleHandlersSetup) return;
+            
+            // Save draft on visibility change
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && isDirty && currentWorkout.length > 0) {
+                    console.log('App hidden, saving draft...');
+                    saveDraft();
+                }
+            });
+            
+            // Save draft before unload
+            window.addEventListener('beforeunload', (event) => {
+                if (isDirty && currentWorkout.length > 0) {
+                    saveDraft();
+                    event.preventDefault();
+                    event.returnValue = 'У вас есть несохраненные изменения. Уверены, что хотите выйти?';
+                    return event.returnValue;
+                }
+            });
+            
+            // Handle pagehide (iOS Safari)
+            window.addEventListener('pagehide', () => {
+                if (isDirty && currentWorkout.length > 0) {
+                    saveDraft();
+                }
+            });
+            
+            lifecycleHandlersSetup = true;
+        }
+
+        // Update Telegram WebApp UI
+        function updateTelegramUI() {
+            if (!window.Telegram?.WebApp) return;
+            
+            const tg = window.Telegram.WebApp;
+            
+            // Update back button based on current screen
+            if (currentScreen === 'main') {
+                tg.BackButton.hide();
+            } else {
+                tg.BackButton.show();
+            }
+            
+            // Update main button for workout screen
+            if (currentScreen === 'workout') {
+                if (currentWorkout.length > 0) {
+                    tg.MainButton.setText('💾 Сохранить тренировку');
+                    tg.MainButton.color = '#4CAF50';
+                    tg.MainButton.textColor = '#FFFFFF';
+                    tg.MainButton.show();
+                } else {
+                    tg.MainButton.hide();
+                }
+            } else {
+                tg.MainButton.hide();
+            }
+        }
+
         // Exercise Form Logic
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOM Content Loaded, initializing app...');
+            
+            // Initialize Telegram WebApp
+            await initTelegramWebApp();
+            
+            // Setup lifecycle handlers
+            setupLifecycleHandlers();
+            
+            // Start autosave
+            startAutosave();
+            
+            // Load draft workout
+            await loadDraft();
+            
+            console.log('App initialization complete');
+            
             const exerciseSelect = document.getElementById('exercise-select');
             const weightSelect = document.getElementById('weight-select');
             const repsSelect = document.getElementById('reps-select');
@@ -423,6 +926,9 @@
                 document.getElementById('workout-tonnage').textContent = Math.round(totalTonnage);
                 document.getElementById('workout-reps').textContent = totalReps;
                 document.getElementById('workout-max-weight').textContent = Math.round(maxWeight);
+                
+                // Update Telegram WebApp buttons
+                updateTelegramUI();
             }
 
             function renderExercises() {
@@ -452,15 +958,20 @@
 
             addBtn.addEventListener('click', function() {
                 const exercise = {
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                     name: exerciseSelect.value,
-                    weight: weightSelect.value,
-                    reps: repsSelect.value
+                    weight: parseFloat(weightSelect.value) || 0,
+                    reps: parseInt(repsSelect.value) || 0,
+                    addedAt: new Date().toISOString()
                 };
                 
                 currentWorkout.push(exercise);
+                markDirty(); // Mark workout as dirty for autosave
                 updateWorkoutStats();
                 renderExercises();
                 resetForm();
+                
+                console.log('Exercise added:', exercise);
                 
                 // Success feedback
                 const originalText = addBtn.innerHTML;
@@ -475,15 +986,21 @@
 
             supersetBtn.addEventListener('click', function() {
                 const exercise = {
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                     name: exerciseSelect.value + ' (суперсет)',
-                    weight: weightSelect.value,
-                    reps: repsSelect.value
+                    weight: parseFloat(weightSelect.value) || 0,
+                    reps: parseInt(repsSelect.value) || 0,
+                    isSuperset: true,
+                    addedAt: new Date().toISOString()
                 };
                 
                 currentWorkout.push(exercise);
+                markDirty(); // Mark workout as dirty for autosave
                 updateWorkoutStats();
                 renderExercises();
                 resetForm();
+                
+                console.log('Superset exercise added:', exercise);
                 
                 // Success feedback
                 const originalText = supersetBtn.innerHTML;
@@ -497,25 +1014,27 @@
             });
 
             // Clear workout
-            document.getElementById('clear-workout-btn').addEventListener('click', function() {
-                if (confirm('Очистить текущую тренировку?')) {
+            document.getElementById('clear-workout-btn').addEventListener('click', async function() {
+                if (confirm('Очистить текущую тренировку? Все несохраненные изменения будут удалены.')) {
                     currentWorkout = [];
+                    isDirty = false;
                     updateWorkoutStats();
                     renderExercises();
+                    
+                    // Clear draft
+                    try {
+                        await StorageSystem.set('draftWorkout', null);
+                        showSaveStatus('Тренировка очищена', 'info');
+                        setTimeout(() => hideSaveStatus(), 2000);
+                    } catch (error) {
+                        console.error('Failed to clear draft:', error);
+                    }
                 }
             });
 
             // Save workout
-            document.getElementById('save-workout-btn').addEventListener('click', function() {
-                if (currentWorkout.length === 0) {
-                    alert('Добавьте хотя бы одно упражнение');
-                    return;
-                }
-                
-                alert(`Тренировка сохранена!\n${currentWorkout.length} упражнений\nТоннаж: ${document.getElementById('workout-tonnage').textContent} кг`);
-                currentWorkout = [];
-                updateWorkoutStats();
-                renderExercises();
+            document.getElementById('save-workout-btn').addEventListener('click', async function() {
+                await saveCompleteWorkout();
             });
 
             updateButtons();
@@ -540,48 +1059,11 @@
 
         // Remove exercise function
         function removeExercise(index) {
+            console.log('Removing exercise at index:', index);
             currentWorkout.splice(index, 1);
-            
-            // Update stats and render
-            let totalTonnage = 0;
-            let totalReps = 0;
-            let maxWeight = 0;
-
-            currentWorkout.forEach(exercise => {
-                const weight = parseFloat(exercise.weight) || 0;
-                const reps = parseInt(exercise.reps) || 0;
-                
-                totalTonnage += weight * reps;
-                totalReps += reps;
-                maxWeight = Math.max(maxWeight, weight);
-            });
-
-            document.getElementById('workout-tonnage').textContent = Math.round(totalTonnage);
-            document.getElementById('workout-reps').textContent = totalReps;
-            document.getElementById('workout-max-weight').textContent = Math.round(maxWeight);
-            
-            // Re-render exercises
-            const exercisesList = document.getElementById('exercises-list');
-            const emptyWorkout = document.getElementById('empty-workout');
-            
-            if (currentWorkout.length === 0) {
-                emptyWorkout.style.display = 'flex';
-                return;
-            }
-
-            emptyWorkout.style.display = 'none';
-            
-            const exercisesHtml = currentWorkout.map((exercise, index) => `
-                <div class="exercise-item" style="background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: var(--radius-xl); padding: var(--spacing-lg); margin-bottom: var(--spacing-md); display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h4 style="color: var(--text-primary); margin-bottom: 8px;">${exercise.name}</h4>
-                        <p style="color: var(--text-secondary); font-size: 14px;">${exercise.weight} кг × ${exercise.reps} повторов</p>
-                    </div>
-                    <button onclick="removeExercise(${index})" style="background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 8px; color: var(--text-secondary); cursor: pointer;">🗑️</button>
-                </div>
-            `).join('');
-
-            exercisesList.innerHTML = exercisesHtml;
+            markDirty(); // Mark workout as dirty for autosave
+            updateWorkoutStats();
+            renderExercises();
         }
     </script>
 </body>
